@@ -1,7 +1,7 @@
-# GMX Contracts
-Contracts for GMX.
+# fxdx Contracts
+Contracts for fxdx.
 
-Docs at https://gmxio.gitbook.io/gmx/contracts.
+Docs at https://fxdx.gitbook.io/a/evm/contracts.
 
 ## Install Dependencies
 If npx is not installed yet:
