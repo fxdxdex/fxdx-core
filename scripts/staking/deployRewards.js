@@ -34,7 +34,7 @@ async function main() {
   const bonusAlpTracker = { address: AddressZero }
   const feeAlpTracker = { address: AddressZero }
 
-  const glpManager = { address: AddressZero }
+  const flpManager = { address: AddressZero }
   const glp = { address: AddressZero }
 
   await sendTxn(stakedGmxTracker.setInPrivateTransferMode(true), "stakedGmxTracker.setInPrivateTransferMode")
@@ -62,7 +62,7 @@ async function main() {
     stakedAlpTracker.address,
     bonusAlpTracker.address,
     feeAlpTracker.address,
-    glpManager.address
+    flpManager.address
   ), "rewardRouter.initialize")
 
   // allow rewardRouter to stake in stakedGmxTracker

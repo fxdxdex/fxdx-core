@@ -13,7 +13,7 @@ import "../access/Governable.sol";
 
 pragma solidity 0.6.12;
 
-contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
+contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -71,7 +71,7 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function setCooldownDuration(uint256 _cooldownDuration) external onlyGov {
-        require(_cooldownDuration <= MAX_COOLDOWN_DURATION, "GlpManager: invalid _cooldownDuration");
+        require(_cooldownDuration <= MAX_COOLDOWN_DURATION, "FlpManager: invalid _cooldownDuration");
         cooldownDuration = _cooldownDuration;
     }
 
@@ -81,7 +81,7 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function addLiquidity(address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) external override nonReentrant returns (uint256) {
-        if (inPrivateMode) { revert("GlpManager: action not enabled"); }
+        if (inPrivateMode) { revert("FlpManager: action not enabled"); }
         return _addLiquidity(msg.sender, msg.sender, _token, _amount, _minUsdg, _minGlp);
     }
 
@@ -91,7 +91,7 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function removeLiquidity(address _tokenOut, uint256 _glpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
-        if (inPrivateMode) { revert("GlpManager: action not enabled"); }
+        if (inPrivateMode) { revert("FlpManager: action not enabled"); }
         return _removeLiquidity(msg.sender, _tokenOut, _glpAmount, _minOut, _receiver);
     }
 
@@ -158,7 +158,7 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function _addLiquidity(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) private returns (uint256) {
-        require(_amount > 0, "GlpManager: invalid _amount");
+        require(_amount > 0, "FlpManager: invalid _amount");
 
         // calculate aum before buyUSDG
         uint256 aumInUsdg = getAumInUsdg(true);
@@ -166,10 +166,10 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
 
         IERC20(_token).safeTransferFrom(_fundingAccount, address(vault), _amount);
         uint256 usdgAmount = vault.buyUSDG(_token, address(this));
-        require(usdgAmount >= _minUsdg, "GlpManager: insufficient USDG output");
+        require(usdgAmount >= _minUsdg, "FlpManager: insufficient USDG output");
 
         uint256 mintAmount = aumInUsdg == 0 ? usdgAmount : usdgAmount.mul(glpSupply).div(aumInUsdg);
-        require(mintAmount >= _minGlp, "GlpManager: insufficient GLP output");
+        require(mintAmount >= _minGlp, "FlpManager: insufficient GLP output");
 
         IMintable(glp).mint(_account, mintAmount);
 
@@ -181,8 +181,8 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function _removeLiquidity(address _account, address _tokenOut, uint256 _glpAmount, uint256 _minOut, address _receiver) private returns (uint256) {
-        require(_glpAmount > 0, "GlpManager: invalid _glpAmount");
-        require(lastAddedAt[_account].add(cooldownDuration) <= block.timestamp, "GlpManager: cooldown duration not yet passed");
+        require(_glpAmount > 0, "FlpManager: invalid _glpAmount");
+        require(lastAddedAt[_account].add(cooldownDuration) <= block.timestamp, "FlpManager: cooldown duration not yet passed");
 
         // calculate aum before sellUSDG
         uint256 aumInUsdg = getAumInUsdg(false);
@@ -198,7 +198,7 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
 
         IERC20(usdg).transfer(address(vault), usdgAmount);
         uint256 amountOut = vault.sellUSDG(_tokenOut, _receiver);
-        require(amountOut >= _minOut, "GlpManager: insufficient output");
+        require(amountOut >= _minOut, "FlpManager: insufficient output");
 
         emit RemoveLiquidity(_account, _tokenOut, _glpAmount, aumInUsdg, glpSupply, usdgAmount, amountOut);
 
@@ -206,6 +206,6 @@ contract GlpManager is ReentrancyGuard, Governable, IFlpManager {
     }
 
     function _validateHandler() private view {
-        require(isHandler[msg.sender], "GlpManager: forbidden");
+        require(isHandler[msg.sender], "FlpManager: forbidden");
     }
 }

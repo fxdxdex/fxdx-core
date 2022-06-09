@@ -21,7 +21,7 @@ contract StakedGlp {
     uint8 public constant decimals = 18;
 
     address public glp;
-    IFlpManager public glpManager;
+    IFlpManager public flpManager;
     address public stakedGlpTracker;
     address public feeGlpTracker;
 
@@ -31,12 +31,12 @@ contract StakedGlp {
 
     constructor(
         address _glp,
-        IFlpManager _glpManager,
+        IFlpManager _flpManager,
         address _stakedGlpTracker,
         address _feeGlpTracker
     ) public {
         glp = _glp;
-        glpManager = _glpManager;
+        flpManager = _flpManager;
         stakedGlpTracker = _stakedGlpTracker;
         feeGlpTracker = _feeGlpTracker;
     }
@@ -84,7 +84,7 @@ contract StakedGlp {
         require(_recipient != address(0), "StakedGlp: transfer to the zero address");
 
         require(
-            glpManager.lastAddedAt(_sender).add(glpManager.cooldownDuration()) <= block.timestamp,
+            flpManager.lastAddedAt(_sender).add(flpManager.cooldownDuration()) <= block.timestamp,
             "StakedGlp: cooldown duration not yet passed"
         );
 

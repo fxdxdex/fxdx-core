@@ -4,7 +4,7 @@ const { expandDecimals } = require("../../test/shared/utilities")
 async function main() {
   const rewardRouter = await contractAt("RewardRouter", "0xEa7fCb85802713Cb03291311C66d6012b23402ea")
   const bnGmx = await contractAt("MintableBaseToken", "0x35247165119B69A40edD5304969560D0ef486921")
-  const glpManager = await contractAt("GlpManager", "0x91425Ac4431d068980d497924DD540Ae274f3270")
+  const flpManager = await contractAt("FlpManager", "0x91425Ac4431d068980d497924DD540Ae274f3270")
 
   const stakedGmxTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4")
   const bonusGmxTracker = await contractAt("RewardTracker", "0x4d268a7d4C16ceB5a606c173Bd974984343fea13")
@@ -22,8 +22,8 @@ async function main() {
   // allow rewardRouter to burn bnGmx
   await sendTxn(bnGmx.setMinter(rewardRouter.address, false), "bnGmx.setMinter(rewardRouter)")
 
-  // allow rewardRouter to mint in glpManager
-  await sendTxn(glpManager.setHandler(rewardRouter.address, false), "glpManager.setHandler(rewardRouter)")
+  // allow rewardRouter to mint in flpManager
+  await sendTxn(flpManager.setHandler(rewardRouter.address, false), "flpManager.setHandler(rewardRouter)")
   // allow rewardRouter to stake in feeGlpTracker
   await sendTxn(feeGlpTracker.setHandler(rewardRouter.address, false), "feeGlpTracker.setHandler(rewardRouter)")
   // allow rewardRouter to stake in stakedGlpTracker

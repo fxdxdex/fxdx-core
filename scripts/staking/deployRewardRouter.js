@@ -22,9 +22,9 @@ async function main() {
   const stakedGlpTracker = await contractAt("RewardTracker", "0x1aDDD80E6039594eE970E5872D247bf0414C8903")
 
   const glp = await contractAt("GLP", "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258")
-  const glpManager = await contractAt("GlpManager", "0x321F653eED006AD1C29D174e17d96351BDe22649")
+  const flpManager = await contractAt("FlpManager", "0x321F653eED006AD1C29D174e17d96351BDe22649")
 
-  console.log("glpManager", glpManager.address)
+  console.log("flpManager", flpManager.address)
 
   const rewardRouter = await deployContract("RewardRouter", [])
 
@@ -39,7 +39,7 @@ async function main() {
     feeGmxTracker.address,
     feeGlpTracker.address,
     stakedGlpTracker.address,
-    glpManager.address
+    flpManager.address
   ), "rewardRouter.initialize")
 
   // allow rewardRouter to stake in stakedGmxTracker
@@ -51,8 +51,8 @@ async function main() {
   // allow rewardRouter to burn bnGmx
   await sendTxn(bnGmx.setMinter(rewardRouter.address, true), "bnGmx.setMinter(rewardRouter)")
 
-  // allow rewardRouter to mint in glpManager
-  await sendTxn(glpManager.setHandler(rewardRouter.address, true), "glpManager.setHandler(rewardRouter)")
+  // allow rewardRouter to mint in flpManager
+  await sendTxn(flpManager.setHandler(rewardRouter.address, true), "flpManager.setHandler(rewardRouter)")
   // allow rewardRouter to stake in feeGlpTracker
   await sendTxn(feeGlpTracker.setHandler(rewardRouter.address, true), "feeGlpTracker.setHandler(rewardRouter)")
   // allow rewardRouter to stake in stakedGlpTracker

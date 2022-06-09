@@ -37,7 +37,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
     address public stakedGlpTracker;
     address public feeGlpTracker;
 
-    address public glpManager;
+    address public flpManager;
 
     address public gmxVester;
     address public glpVester;
@@ -65,7 +65,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         address _feeGmxTracker,
         address _feeGlpTracker,
         address _stakedGlpTracker,
-        address _glpManager,
+        address _flpManager,
         address _gmxVester,
         address _glpVester
     ) external onlyGov {
@@ -87,7 +87,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         feeGlpTracker = _feeGlpTracker;
         stakedGlpTracker = _stakedGlpTracker;
 
-        glpManager = _glpManager;
+        flpManager = _flpManager;
 
         gmxVester = _gmxVester;
         glpVester = _glpVester;
@@ -129,7 +129,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
         address account = msg.sender;
-        uint256 glpAmount = IFlpManager(glpManager).addLiquidityForAccount(account, account, _token, _amount, _minUsdg, _minGlp);
+        uint256 glpAmount = IFlpManager(flpManager).addLiquidityForAccount(account, account, _token, _amount, _minUsdg, _minGlp);
         IRewardTracker(feeGlpTracker).stakeForAccount(account, account, glp, glpAmount);
         IRewardTracker(stakedGlpTracker).stakeForAccount(account, account, feeGlpTracker, glpAmount);
 
@@ -142,10 +142,10 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         require(msg.value > 0, "RewardRouter: invalid msg.value");
 
         IWETH(weth).deposit{value: msg.value}();
-        IERC20(weth).approve(glpManager, msg.value);
+        IERC20(weth).approve(flpManager, msg.value);
 
         address account = msg.sender;
-        uint256 glpAmount = IFlpManager(glpManager).addLiquidityForAccount(address(this), account, weth, msg.value, _minUsdg, _minGlp);
+        uint256 glpAmount = IFlpManager(flpManager).addLiquidityForAccount(address(this), account, weth, msg.value, _minUsdg, _minGlp);
 
         IRewardTracker(feeGlpTracker).stakeForAccount(account, account, glp, glpAmount);
         IRewardTracker(stakedGlpTracker).stakeForAccount(account, account, feeGlpTracker, glpAmount);
@@ -161,7 +161,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         address account = msg.sender;
         IRewardTracker(stakedGlpTracker).unstakeForAccount(account, feeGlpTracker, _glpAmount, account);
         IRewardTracker(feeGlpTracker).unstakeForAccount(account, glp, _glpAmount, account);
-        uint256 amountOut = IFlpManager(glpManager).removeLiquidityForAccount(account, _tokenOut, _glpAmount, _minOut, _receiver);
+        uint256 amountOut = IFlpManager(flpManager).removeLiquidityForAccount(account, _tokenOut, _glpAmount, _minOut, _receiver);
 
         emit UnstakeGlp(account, _glpAmount);
 
@@ -174,7 +174,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         address account = msg.sender;
         IRewardTracker(stakedGlpTracker).unstakeForAccount(account, feeGlpTracker, _glpAmount, account);
         IRewardTracker(feeGlpTracker).unstakeForAccount(account, glp, _glpAmount, account);
-        uint256 amountOut = IFlpManager(glpManager).removeLiquidityForAccount(account, weth, _glpAmount, _minOut, address(this));
+        uint256 amountOut = IFlpManager(flpManager).removeLiquidityForAccount(account, weth, _glpAmount, _minOut, address(this));
 
         IWETH(weth).withdraw(amountOut);
 

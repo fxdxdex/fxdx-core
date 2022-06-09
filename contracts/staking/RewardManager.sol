@@ -12,7 +12,7 @@ contract RewardManager is Governable {
     ITimelock public timelock;
     address public rewardRouter;
 
-    address public glpManager;
+    address public flpManager;
 
     address public stakedGmxTracker;
     address public bonusGmxTracker;
@@ -33,7 +33,7 @@ contract RewardManager is Governable {
     function initialize(
         ITimelock _timelock,
         address _rewardRouter,
-        address _glpManager,
+        address _flpManager,
         address _stakedGmxTracker,
         address _bonusGmxTracker,
         address _feeGmxTracker,
@@ -52,7 +52,7 @@ contract RewardManager is Governable {
         timelock = _timelock;
         rewardRouter = _rewardRouter;
 
-        glpManager = _glpManager;
+        flpManager = _flpManager;
 
         stakedGmxTracker = _stakedGmxTracker;
         bonusGmxTracker = _bonusGmxTracker;
@@ -85,7 +85,7 @@ contract RewardManager is Governable {
     }
 
     function enableRewardRouter() external onlyGov {
-        timelock.managedSetHandler(glpManager, rewardRouter, true);
+        timelock.managedSetHandler(flpManager, rewardRouter, true);
 
         timelock.managedSetHandler(stakedGmxTracker, rewardRouter, true);
         timelock.managedSetHandler(bonusGmxTracker, rewardRouter, true);

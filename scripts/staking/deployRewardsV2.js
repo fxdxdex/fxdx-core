@@ -20,7 +20,7 @@ async function main() {
   const feeGmxTracker = { address: "0xd2D1162512F927a7e282Ef43a362659E4F2a728F" }
   const feeGlpTracker = { address: "0x4e971a87900b931fF39d1Aad67697F49835400b6" }
   const stakedGlpTracker = { address: "0x1aDDD80E6039594eE970E5872D247bf0414C8903" }
-  const glpManager = { address: "0x321F653eED006AD1C29D174e17d96351BDe22649" }
+  const flpManager = { address: "0x321F653eED006AD1C29D174e17d96351BDe22649" }
   const stakedGmxDistributor = { address: "0x23208B91A98c7C1CD9FE63085BFf68311494F193" }
   const stakedGlpDistributor = { address: "0x60519b48ec4183a61ca2B8e37869E675FD203b34" }
 
@@ -68,7 +68,7 @@ async function main() {
     feeGmxTracker.address,
     feeGlpTracker.address,
     stakedGlpTracker.address,
-    glpManager.address,
+    flpManager.address,
     gmxVester.address,
     glpVester.address
   )
@@ -76,7 +76,7 @@ async function main() {
   await rewardManager.initialize(
     timelock.address,
     rewardRouter.address,
-    glpManager.address,
+    flpManager.address,
     stakedGmxTracker.address,
     bonusGmxTracker.address,
     feeGmxTracker.address,

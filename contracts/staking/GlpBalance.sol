@@ -9,7 +9,7 @@ import "../core/interfaces/IFlpManager.sol";
 contract GlpBalance {
     using SafeMath for uint256;
 
-    IFlpManager public glpManager;
+    IFlpManager public flpManager;
     address public stakedGlpTracker;
 
     mapping (address => mapping (address => uint256)) public allowances;
@@ -17,10 +17,10 @@ contract GlpBalance {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor(
-        IFlpManager _glpManager,
+        IFlpManager _flpManager,
         address _stakedGlpTracker
     ) public {
-        glpManager = _glpManager;
+        flpManager = _flpManager;
         stakedGlpTracker = _stakedGlpTracker;
     }
 
@@ -59,7 +59,7 @@ contract GlpBalance {
         require(_recipient != address(0), "GlpBalance: transfer to the zero address");
 
         require(
-            glpManager.lastAddedAt(_sender).add(glpManager.cooldownDuration()) <= block.timestamp,
+            flpManager.lastAddedAt(_sender).add(flpManager.cooldownDuration()) <= block.timestamp,
             "GlpBalance: cooldown duration not yet passed"
         );
 

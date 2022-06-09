@@ -18,7 +18,7 @@ describe("RewardRouterV2", function () {
   let rewardManager
 
   let vault
-  let glpManager
+  let flpManager
   let glp
   let usdg
   let router
@@ -90,7 +90,7 @@ describe("RewardRouterV2", function () {
     glp = await deployContract("GLP", [])
 
     await initVault(vault, router, usdg, vaultPriceFeed)
-    glpManager = await deployContract("GlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
+    flpManager = await deployContract("FlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -107,8 +107,8 @@ describe("RewardRouterV2", function () {
     await vault.setTokenConfig(...getBnbConfig(bnb, bnbPriceFeed))
 
     await glp.setInPrivateTransferMode(true)
-    await glp.setMinter(glpManager.address, true)
-    await glpManager.setInPrivateMode(true)
+    await glp.setMinter(flpManager.address, true)
+    await flpManager.setInPrivateMode(true)
 
     gmx = await deployContract("GMX", []);
     esGmx = await deployContract("EsGMX", []);
@@ -188,7 +188,7 @@ describe("RewardRouterV2", function () {
       feeGmxTracker.address,
       feeGlpTracker.address,
       stakedGlpTracker.address,
-      glpManager.address,
+      flpManager.address,
       gmxVester.address,
       glpVester.address
     )
@@ -196,7 +196,7 @@ describe("RewardRouterV2", function () {
     await rewardManager.initialize(
       timelock.address,
       rewardRouter.address,
-      glpManager.address,
+      flpManager.address,
       stakedGmxTracker.address,
       bonusGmxTracker.address,
       feeGmxTracker.address,
@@ -237,7 +237,7 @@ describe("RewardRouterV2", function () {
     await esGmx.setHandler(tokenManager.address, true)
     await gmxVester.setHandler(wallet.address, true)
 
-    await glpManager.setGov(timelock.address)
+    await flpManager.setGov(timelock.address)
     await stakedGmxTracker.setGov(timelock.address)
     await bonusGmxTracker.setGov(timelock.address)
     await feeGmxTracker.setGov(timelock.address)
@@ -271,7 +271,7 @@ describe("RewardRouterV2", function () {
     expect(await rewardRouter.feeGlpTracker()).eq(feeGlpTracker.address)
     expect(await rewardRouter.stakedGlpTracker()).eq(stakedGlpTracker.address)
 
-    expect(await rewardRouter.glpManager()).eq(glpManager.address)
+    expect(await rewardRouter.flpManager()).eq(flpManager.address)
 
     expect(await rewardRouter.gmxVester()).eq(gmxVester.address)
     expect(await rewardRouter.glpVester()).eq(glpVester.address)
@@ -287,14 +287,14 @@ describe("RewardRouterV2", function () {
       feeGmxTracker.address,
       feeGlpTracker.address,
       stakedGlpTracker.address,
-      glpManager.address,
+      flpManager.address,
       gmxVester.address,
       glpVester.address
     )).to.be.revertedWith("RewardRouter: already initialized")
 
     expect(await rewardManager.timelock()).eq(timelock.address)
     expect(await rewardManager.rewardRouter()).eq(rewardRouter.address)
-    expect(await rewardManager.glpManager()).eq(glpManager.address)
+    expect(await rewardManager.flpManager()).eq(flpManager.address)
     expect(await rewardManager.stakedGmxTracker()).eq(stakedGmxTracker.address)
     expect(await rewardManager.bonusGmxTracker()).eq(bonusGmxTracker.address)
     expect(await rewardManager.feeGmxTracker()).eq(feeGmxTracker.address)
@@ -311,7 +311,7 @@ describe("RewardRouterV2", function () {
     await expect(rewardManager.initialize(
       timelock.address,
       rewardRouter.address,
-      glpManager.address,
+      flpManager.address,
       stakedGmxTracker.address,
       bonusGmxTracker.address,
       feeGmxTracker.address,
@@ -518,7 +518,7 @@ describe("RewardRouterV2", function () {
     await feeGlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     const tx0 = await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -534,7 +534,7 @@ describe("RewardRouterV2", function () {
     expect(await stakedGlpTracker.depositBalances(user1.address, feeGlpTracker.address)).eq(expandDecimals(2991, 17))
 
     await bnb.mint(user1.address, expandDecimals(2, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(2, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(2, 18))
     await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(2, 18),
@@ -552,7 +552,7 @@ describe("RewardRouterV2", function () {
     expect(await stakedGlpTracker.claimable(user1.address)).lt(expandDecimals(1786, 18))
 
     await bnb.mint(user2.address, expandDecimals(1, 18))
-    await bnb.connect(user2).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user2).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user2).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -565,7 +565,7 @@ describe("RewardRouterV2", function () {
       expandDecimals(299, 18),
       "990000000000000000", // 0.99
       user2.address
-    )).to.be.revertedWith("GlpManager: cooldown duration not yet passed")
+    )).to.be.revertedWith("FlpManager: cooldown duration not yet passed")
 
     expect(await feeGlpTracker.stakedAmounts(user1.address)).eq("897300000000000000000") // 897.3
     expect(await stakedGlpTracker.stakedAmounts(user1.address)).eq("897300000000000000000")
@@ -655,10 +655,10 @@ describe("RewardRouterV2", function () {
       .to.be.revertedWith("RewardRouter: invalid msg.value")
 
     await expect(rewardRouter.connect(user0).mintAndStakeGlpETH(expandDecimals(300, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("GlpManager: insufficient USDG output")
+      .to.be.revertedWith("FlpManager: insufficient USDG output")
 
     await expect(rewardRouter.connect(user0).mintAndStakeGlpETH(expandDecimals(299, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("GlpManager: insufficient GLP output")
+      .to.be.revertedWith("FlpManager: insufficient GLP output")
 
     expect(await bnb.balanceOf(user0.address)).eq(0)
     expect(await bnb.balanceOf(vault.address)).eq(0)
@@ -678,12 +678,12 @@ describe("RewardRouterV2", function () {
       .to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount")
 
     await expect(rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("GlpManager: cooldown duration not yet passed")
+      .to.be.revertedWith("FlpManager: cooldown duration not yet passed")
 
     await increaseTime(provider, 24 * 60 * 60 + 10)
 
     await expect(rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("GlpManager: insufficient output")
+      .to.be.revertedWith("FlpManager: insufficient output")
 
     await rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", "990000000000000000", receiver0.address)
     expect(await provider.getBalance(receiver0.address)).eq("994009000000000000") // 0.994009
@@ -809,7 +809,7 @@ describe("RewardRouterV2", function () {
     await feeGlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -818,7 +818,7 @@ describe("RewardRouterV2", function () {
     )
 
     await bnb.mint(user2.address, expandDecimals(1, 18))
-    await bnb.connect(user2).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user2).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user2).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -1237,7 +1237,7 @@ describe("RewardRouterV2", function () {
       feeGmxTracker.address,
       feeGlpTracker.address,
       stakedGlpTracker.address,
-      glpManager.address,
+      flpManager.address,
       gmxVester.address,
       glpVester.address
     )
@@ -1245,7 +1245,7 @@ describe("RewardRouterV2", function () {
     await rewardManagerV2.initialize(
       timelockV2.address,
       rewardRouterV2.address,
-      glpManager.address,
+      flpManager.address,
       stakedGmxTracker.address,
       bonusGmxTracker.address,
       feeGmxTracker.address,
@@ -1259,7 +1259,7 @@ describe("RewardRouterV2", function () {
       glpVester.address
     )
 
-    await timelock.signalSetGov(glpManager.address, timelockV2.address)
+    await timelock.signalSetGov(flpManager.address, timelockV2.address)
     await timelock.signalSetGov(stakedGmxTracker.address, timelockV2.address)
     await timelock.signalSetGov(bonusGmxTracker.address, timelockV2.address)
     await timelock.signalSetGov(feeGmxTracker.address, timelockV2.address)
@@ -1275,7 +1275,7 @@ describe("RewardRouterV2", function () {
     await increaseTime(provider, 20)
     await mineBlock(provider)
 
-    await timelock.setGov(glpManager.address, timelockV2.address)
+    await timelock.setGov(flpManager.address, timelockV2.address)
     await timelock.setGov(stakedGmxTracker.address, timelockV2.address)
     await timelock.setGov(bonusGmxTracker.address, timelockV2.address)
     await timelock.setGov(feeGmxTracker.address, timelockV2.address)
@@ -1304,7 +1304,7 @@ describe("RewardRouterV2", function () {
     await feeGmxDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouterV2.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -1467,7 +1467,7 @@ describe("RewardRouterV2", function () {
     await feeGlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -1481,7 +1481,7 @@ describe("RewardRouterV2", function () {
     expect(await stakedGlpTracker.stakedAmounts(user1.address)).eq(expandDecimals(2991, 17))
     expect(await stakedGlpTracker.depositBalances(user1.address, feeGlpTracker.address)).eq(expandDecimals(2991, 17))
 
-    const stakedGlp = await deployContract("StakedGlp", [glp.address, glpManager.address, stakedGlpTracker.address, feeGlpTracker.address])
+    const stakedGlp = await deployContract("StakedGlp", [glp.address, flpManager.address, stakedGlpTracker.address, feeGlpTracker.address])
 
     await expect(stakedGlp.connect(user2).transferFrom(user1.address, user3.address, expandDecimals(2991, 17)))
       .to.be.revertedWith("StakedGlp: transfer amount exceeds allowance")
@@ -1586,7 +1586,7 @@ describe("RewardRouterV2", function () {
 
     expect(await bnb.balanceOf(user1.address)).eq("830833333333333333")
 
-    await usdg.addVault(glpManager.address)
+    await usdg.addVault(flpManager.address)
 
     expect(await bnb.balanceOf(user3.address)).eq("0")
 
@@ -1605,7 +1605,7 @@ describe("RewardRouterV2", function () {
     await feeGlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -1619,7 +1619,7 @@ describe("RewardRouterV2", function () {
     expect(await stakedGlpTracker.stakedAmounts(user1.address)).eq(expandDecimals(2991, 17))
     expect(await stakedGlpTracker.depositBalances(user1.address, feeGlpTracker.address)).eq(expandDecimals(2991, 17))
 
-    const glpBalance = await deployContract("GlpBalance", [glpManager.address, stakedGlpTracker.address])
+    const glpBalance = await deployContract("GlpBalance", [flpManager.address, stakedGlpTracker.address])
 
     await expect(glpBalance.connect(user2).transferFrom(user1.address, user3.address, expandDecimals(2991, 17)))
       .to.be.revertedWith("GlpBalance: transfer amount exceeds allowance")

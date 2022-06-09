@@ -13,7 +13,7 @@ describe("RewardRouter", function () {
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
 
   let vault
-  let glpManager
+  let flpManager
   let glp
   let usdg
   let router
@@ -70,7 +70,7 @@ describe("RewardRouter", function () {
     glp = await deployContract("GLP", [])
 
     await initVault(vault, router, usdg, vaultPriceFeed)
-    glpManager = await deployContract("GlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
+    flpManager = await deployContract("FlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -87,8 +87,8 @@ describe("RewardRouter", function () {
     await vault.setTokenConfig(...getBnbConfig(bnb, bnbPriceFeed))
 
     await glp.setInPrivateTransferMode(true)
-    await glp.setMinter(glpManager.address, true)
-    await glpManager.setInPrivateMode(true)
+    await glp.setMinter(flpManager.address, true)
+    await flpManager.setInPrivateMode(true)
 
     gmx = await deployContract("GMX", []);
     esGmx = await deployContract("EsGMX", []);
@@ -146,7 +146,7 @@ describe("RewardRouter", function () {
       feeGmxTracker.address,
       feeGlpTracker.address,
       stakedGlpTracker.address,
-      glpManager.address
+      flpManager.address
     )
 
     // allow rewardRouter to stake in stakedGmxTracker
@@ -165,8 +165,8 @@ describe("RewardRouter", function () {
     // allow rewardRouter to burn bnGmx
     await bnGmx.setMinter(rewardRouter.address, true)
 
-    // allow rewardRouter to mint in glpManager
-    await glpManager.setHandler(rewardRouter.address, true)
+    // allow rewardRouter to mint in flpManager
+    await flpManager.setHandler(rewardRouter.address, true)
     // allow rewardRouter to stake in feeGlpTracker
     await feeGlpTracker.setHandler(rewardRouter.address, true)
     // allow stakedGlpTracker to stake feeGlpTracker
@@ -212,7 +212,7 @@ describe("RewardRouter", function () {
     expect(await rewardRouter.feeGlpTracker()).eq(feeGlpTracker.address)
     expect(await rewardRouter.stakedGlpTracker()).eq(stakedGlpTracker.address)
 
-    expect(await rewardRouter.glpManager()).eq(glpManager.address)
+    expect(await rewardRouter.flpManager()).eq(flpManager.address)
 
     await expect(rewardRouter.initialize(
       bnb.address,
@@ -225,7 +225,7 @@ describe("RewardRouter", function () {
       feeGmxTracker.address,
       feeGlpTracker.address,
       stakedGlpTracker.address,
-      glpManager.address
+      flpManager.address
     )).to.be.revertedWith("RewardRouter: already initialized")
   })
 
@@ -421,7 +421,7 @@ describe("RewardRouter", function () {
     await feeGlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
     const tx0 = await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -437,7 +437,7 @@ describe("RewardRouter", function () {
     expect(await stakedGlpTracker.depositBalances(user1.address, feeGlpTracker.address)).eq(expandDecimals(2991, 17))
 
     await bnb.mint(user1.address, expandDecimals(2, 18))
-    await bnb.connect(user1).approve(glpManager.address, expandDecimals(2, 18))
+    await bnb.connect(user1).approve(flpManager.address, expandDecimals(2, 18))
     await rewardRouter.connect(user1).mintAndStakeGlp(
       bnb.address,
       expandDecimals(2, 18),
@@ -455,7 +455,7 @@ describe("RewardRouter", function () {
     expect(await stakedGlpTracker.claimable(user1.address)).lt(expandDecimals(1786, 18))
 
     await bnb.mint(user2.address, expandDecimals(1, 18))
-    await bnb.connect(user2).approve(glpManager.address, expandDecimals(1, 18))
+    await bnb.connect(user2).approve(flpManager.address, expandDecimals(1, 18))
     await rewardRouter.connect(user2).mintAndStakeGlp(
       bnb.address,
       expandDecimals(1, 18),
@@ -468,7 +468,7 @@ describe("RewardRouter", function () {
       expandDecimals(299, 18),
       "990000000000000000", // 0.99
       user2.address
-    )).to.be.revertedWith("GlpManager: cooldown duration not yet passed")
+    )).to.be.revertedWith("FlpManager: cooldown duration not yet passed")
 
     expect(await feeGlpTracker.stakedAmounts(user1.address)).eq("897300000000000000000") // 897.3
     expect(await stakedGlpTracker.stakedAmounts(user1.address)).eq("897300000000000000000")
@@ -558,10 +558,10 @@ describe("RewardRouter", function () {
       .to.be.revertedWith("RewardRouter: invalid msg.value")
 
     await expect(rewardRouter.connect(user0).mintAndStakeGlpETH(expandDecimals(300, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("GlpManager: insufficient USDG output")
+      .to.be.revertedWith("FlpManager: insufficient USDG output")
 
     await expect(rewardRouter.connect(user0).mintAndStakeGlpETH(expandDecimals(299, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("GlpManager: insufficient GLP output")
+      .to.be.revertedWith("FlpManager: insufficient GLP output")
 
     expect(await bnb.balanceOf(user0.address)).eq(0)
     expect(await bnb.balanceOf(vault.address)).eq(0)
@@ -581,12 +581,12 @@ describe("RewardRouter", function () {
       .to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount")
 
     await expect(rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("GlpManager: cooldown duration not yet passed")
+      .to.be.revertedWith("FlpManager: cooldown duration not yet passed")
 
     await increaseTime(provider, 24 * 60 * 60 + 10)
 
     await expect(rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("GlpManager: insufficient output")
+      .to.be.revertedWith("FlpManager: insufficient output")
 
     await rewardRouter.connect(user0).unstakeAndRedeemGlpETH("299100000000000000000", "990000000000000000", receiver0.address)
     expect(await provider.getBalance(receiver0.address)).eq("994009000000000000") // 0.994009

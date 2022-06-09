@@ -8,7 +8,7 @@ async function main() {
 
   const vestingDuration = 365 * 24 * 60 * 60
 
-  const glpManager = await contractAt("GlpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F")
+  const flpManager = await contractAt("FlpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F")
   const glp = await contractAt("GLP", "0x01234181085565ed162a948b6a5e88758CD7c7b8")
 
   const gmx = await contractAt("GMX", "0x62edc0692BD897D2295872a9FFCac5425011c661");
@@ -88,12 +88,12 @@ async function main() {
     feeGmxTracker.address,
     feeGlpTracker.address,
     stakedGlpTracker.address,
-    glpManager.address,
+    flpManager.address,
     gmxVester.address,
     glpVester.address
   ), "rewardRouter.initialize")
 
-  await sendTxn(glpManager.setHandler(rewardRouter.address), "glpManager.setHandler(rewardRouter)")
+  await sendTxn(flpManager.setHandler(rewardRouter.address), "flpManager.setHandler(rewardRouter)")
 
   // allow rewardRouter to stake in stakedGmxTracker
   await sendTxn(stakedGmxTracker.setHandler(rewardRouter.address, true), "stakedGmxTracker.setHandler(rewardRouter)")

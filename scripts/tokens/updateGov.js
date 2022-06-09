@@ -8,7 +8,7 @@ async function getArbValues() {
 
   const addresses = [
     ["vault", vault.address],
-    ["glpManager", "0x321F653eED006AD1C29D174e17d96351BDe22649"],
+    ["flpManager", "0x321F653eED006AD1C29D174e17d96351BDe22649"],
     ["glp", "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258"],
     ["gmx", "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"],
     ["esGmx", "0xf42Ae1D54fd613C9bb14810b0588FaAa09a426cA"],
@@ -34,7 +34,7 @@ async function getAvaxValues() {
 
   const addresses = [
     ["vault", vault.address],
-    ["glpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F"],
+    ["flpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F"],
     ["glp", "0x01234181085565ed162a948b6a5e88758CD7c7b8"],
     ["gmx", "0x62edc0692BD897D2295872a9FFCac5425011c661"],
     ["esGmx", "0xFf1489227BbAAC61a9209A08929E4c2a526DdD17"],

@@ -108,12 +108,12 @@ async function main() {
   const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
   const vaultPriceFeedAddress = await vault.priceFeed()
   const vaultPriceFeed = await contractAt("VaultPriceFeed", vaultPriceFeedAddress)
-  const glpManager = await contractAt("GlpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F")
+  const flpManager = await contractAt("FlpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F")
   const router = await contractAt("Router", "0x5F719c2F1095F7B9fc68a68e35B51194f4b6abe8")
 
   await updateGov(vault, "vault")
   await updateGov(vaultPriceFeed, "vaultPriceFeed")
-  await updateGov(glpManager, "glpManager")
+  await updateGov(flpManager, "flpManager")
   await updateGov(router, "router")
 }
 
