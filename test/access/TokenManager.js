@@ -12,17 +12,17 @@ const { AddressZero } = ethers.constants
 describe("TokenManager", function () {
   const provider = waffle.provider
   const [wallet, user0, user1, user2, user3, signer0, signer1, signer2] = provider.getWallets()
-  let gmx
+  let fxdx
   let eth
   let tokenManager
   let timelock
-  let gmxTimelock
+  let fxdxTimelock
   let nft0
   let nft1
   const nftId = 17
 
   beforeEach(async () => {
-    gmx = await deployContract("GMX", [])
+    fxdx = await deployContract("FXDX", [])
     eth = await deployContract("Token", [])
     tokenManager = await deployContract("TokenManager", [2])
 
@@ -42,7 +42,7 @@ describe("TokenManager", function () {
       100
     ])
 
-    gmxTimelock = await deployContract("GmxTimelock", [
+    fxdxTimelock = await deployContract("FxdxTimelock", [
       wallet.address,
       5 * 24 * 60 * 60,
       7 * 24 * 60 * 60,
@@ -106,7 +106,7 @@ describe("TokenManager", function () {
 
     await tokenManager.connect(wallet).signalApprove(eth.address, user2.address, expandDecimals(5, 18))
 
-    await expect(tokenManager.connect(wallet).approve(gmx.address, user2.address, expandDecimals(5, 18), 1))
+    await expect(tokenManager.connect(wallet).approve(fxdx.address, user2.address, expandDecimals(5, 18), 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
     await expect(tokenManager.connect(wallet).approve(eth.address, user0.address, expandDecimals(5, 18), 1))
@@ -405,87 +405,87 @@ describe("TokenManager", function () {
   })
 
   it("signalSetGov", async () => {
-    await expect(tokenManager.connect(user0).signalSetGov(timelock.address, gmx.address, user1.address))
+    await expect(tokenManager.connect(user0).signalSetGov(timelock.address, fxdx.address, user1.address))
       .to.be.revertedWith("TokenManager: forbidden")
 
-    await tokenManager.connect(wallet).signalSetGov(timelock.address, gmx.address, user1.address)
+    await tokenManager.connect(wallet).signalSetGov(timelock.address, fxdx.address, user1.address)
   })
 
   it("signSetGov", async () => {
-    await expect(tokenManager.connect(user0).signSetGov(timelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(user0).signSetGov(timelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: forbidden")
 
-    await expect(tokenManager.connect(signer2).signSetGov(timelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(signer2).signSetGov(timelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await tokenManager.connect(wallet).signalSetGov(timelock.address, gmx.address, user1.address)
+    await tokenManager.connect(wallet).signalSetGov(timelock.address, fxdx.address, user1.address)
 
-    await expect(tokenManager.connect(user0).signSetGov(timelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(user0).signSetGov(timelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: forbidden")
 
-    await tokenManager.connect(signer2).signSetGov(timelock.address, gmx.address, user1.address, 1)
+    await tokenManager.connect(signer2).signSetGov(timelock.address, fxdx.address, user1.address, 1)
 
-    await expect(tokenManager.connect(signer2).signSetGov(timelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(signer2).signSetGov(timelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: already signed")
 
-    await tokenManager.connect(signer1).signSetGov(timelock.address, gmx.address, user1.address, 1)
+    await tokenManager.connect(signer1).signSetGov(timelock.address, fxdx.address, user1.address, 1)
   })
 
   it("setGov", async () => {
-    await gmx.setGov(gmxTimelock.address)
+    await fxdx.setGov(fxdxTimelock.address)
 
-    await expect(tokenManager.connect(user0).setGov(gmxTimelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(user0).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: forbidden")
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await tokenManager.connect(wallet).signalSetGov(gmxTimelock.address, gmx.address, user1.address)
+    await tokenManager.connect(wallet).signalSetGov(fxdxTimelock.address, fxdx.address, user1.address)
 
-    await expect(tokenManager.connect(wallet).setGov(user2.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(user2.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, user0.address, user1.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, user0.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user2.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user2.address, 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user1.address, 1 + 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1 + 1))
       .to.be.revertedWith("TokenManager: action not signalled")
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: action not authorized")
 
-    await tokenManager.connect(signer0).signSetGov(gmxTimelock.address, gmx.address, user1.address, 1)
+    await tokenManager.connect(signer0).signSetGov(fxdxTimelock.address, fxdx.address, user1.address, 1)
 
-    await expect(tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user1.address, 1))
+    await expect(tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1))
       .to.be.revertedWith("TokenManager: insufficient authorization")
 
-    await expect(gmxTimelock.connect(wallet).signalSetGov(gmx.address, user1.address))
-      .to.be.revertedWith("GmxTimelock: forbidden")
+    await expect(fxdxTimelock.connect(wallet).signalSetGov(fxdx.address, user1.address))
+      .to.be.revertedWith("FxdxTimelock: forbidden")
 
-    await tokenManager.connect(signer2).signSetGov(gmxTimelock.address, gmx.address, user1.address, 1)
+    await tokenManager.connect(signer2).signSetGov(fxdxTimelock.address, fxdx.address, user1.address, 1)
 
-    await expect(gmxTimelock.connect(wallet).setGov(gmx.address, user1.address))
-      .to.be.revertedWith("GmxTimelock: action not signalled")
+    await expect(fxdxTimelock.connect(wallet).setGov(fxdx.address, user1.address))
+      .to.be.revertedWith("FxdxTimelock: action not signalled")
 
-    await tokenManager.connect(wallet).setGov(gmxTimelock.address, gmx.address, user1.address, 1)
+    await tokenManager.connect(wallet).setGov(fxdxTimelock.address, fxdx.address, user1.address, 1)
 
-    await expect(gmxTimelock.connect(wallet).setGov(gmx.address, user1.address))
-      .to.be.revertedWith("GmxTimelock: action time not yet passed")
+    await expect(fxdxTimelock.connect(wallet).setGov(fxdx.address, user1.address))
+      .to.be.revertedWith("FxdxTimelock: action time not yet passed")
 
     await increaseTime(provider, 6 * 24 * 60 * 60 + 10)
     await mineBlock(provider)
 
-    await expect(gmxTimelock.connect(wallet).setGov(gmx.address, user1.address))
-      .to.be.revertedWith("GmxTimelock: action time not yet passed")
+    await expect(fxdxTimelock.connect(wallet).setGov(fxdx.address, user1.address))
+      .to.be.revertedWith("FxdxTimelock: action time not yet passed")
 
     await increaseTime(provider, 1 * 24 * 60 * 60 + 10)
     await mineBlock(provider)
 
-    expect(await gmx.gov()).eq(gmxTimelock.address)
-    await gmxTimelock.connect(wallet).setGov(gmx.address, user1.address)
-    expect(await gmx.gov()).eq(user1.address)
+    expect(await fxdx.gov()).eq(fxdxTimelock.address)
+    await fxdxTimelock.connect(wallet).setGov(fxdx.address, user1.address)
+    expect(await fxdx.gov()).eq(user1.address)
   })
 })

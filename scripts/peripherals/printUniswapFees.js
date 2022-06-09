@@ -11,13 +11,13 @@ async function main() {
 
   const uniPool = await contractAt("UniPool", "0x80A9ae39310abf666A87C743d6ebBD0E8C42158E")
   const weth = new Token(42161, "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", 18, "SYMBOL", "NAME")
-  const gmx = new Token(42161, "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a", 18, "SYMBOL", "NAME")
+  const fxdx = new Token(42161, "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a", 18, "SYMBOL", "NAME")
 
   const poolInfo = await uniPool.slot0()
 
   const pool = new Pool(
     weth, // weth
-    gmx, // gmx
+    fxdx, // fxdx
     10000, // fee
     poolInfo.sqrtPriceX96, // sqrtRatioX96
     1, // liquidity

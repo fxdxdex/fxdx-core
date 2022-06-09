@@ -14,37 +14,37 @@ contract RewardManager is Governable {
 
     address public flpManager;
 
-    address public stakedGmxTracker;
-    address public bonusGmxTracker;
-    address public feeGmxTracker;
+    address public stakedFxdxTracker;
+    address public bonusFxdxTracker;
+    address public feeFxdxTracker;
 
-    address public feeGlpTracker;
-    address public stakedGlpTracker;
+    address public feeFlpTracker;
+    address public stakedFlpTracker;
 
-    address public stakedGmxDistributor;
-    address public stakedGlpDistributor;
+    address public stakedFxdxDistributor;
+    address public stakedFlpDistributor;
 
-    address public esGmx;
-    address public bnGmx;
+    address public esFxdx;
+    address public bnFxdx;
 
-    address public gmxVester;
-    address public glpVester;
+    address public fxdxVester;
+    address public flpVester;
 
     function initialize(
         ITimelock _timelock,
         address _rewardRouter,
         address _flpManager,
-        address _stakedGmxTracker,
-        address _bonusGmxTracker,
-        address _feeGmxTracker,
-        address _feeGlpTracker,
-        address _stakedGlpTracker,
-        address _stakedGmxDistributor,
-        address _stakedGlpDistributor,
-        address _esGmx,
-        address _bnGmx,
-        address _gmxVester,
-        address _glpVester
+        address _stakedFxdxTracker,
+        address _bonusFxdxTracker,
+        address _feeFxdxTracker,
+        address _feeFlpTracker,
+        address _stakedFlpTracker,
+        address _stakedFxdxDistributor,
+        address _stakedFlpDistributor,
+        address _esFxdx,
+        address _bnFxdx,
+        address _fxdxVester,
+        address _flpVester
     ) external onlyGov {
         require(!isInitialized, "RewardManager: already initialized");
         isInitialized = true;
@@ -54,57 +54,57 @@ contract RewardManager is Governable {
 
         flpManager = _flpManager;
 
-        stakedGmxTracker = _stakedGmxTracker;
-        bonusGmxTracker = _bonusGmxTracker;
-        feeGmxTracker = _feeGmxTracker;
+        stakedFxdxTracker = _stakedFxdxTracker;
+        bonusFxdxTracker = _bonusFxdxTracker;
+        feeFxdxTracker = _feeFxdxTracker;
 
-        feeGlpTracker = _feeGlpTracker;
-        stakedGlpTracker = _stakedGlpTracker;
+        feeFlpTracker = _feeFlpTracker;
+        stakedFlpTracker = _stakedFlpTracker;
 
-        stakedGmxDistributor = _stakedGmxDistributor;
-        stakedGlpDistributor = _stakedGlpDistributor;
+        stakedFxdxDistributor = _stakedFxdxDistributor;
+        stakedFlpDistributor = _stakedFlpDistributor;
 
-        esGmx = _esGmx;
-        bnGmx = _bnGmx;
+        esFxdx = _esFxdx;
+        bnFxdx = _bnFxdx;
 
-        gmxVester = _gmxVester;
-        glpVester = _glpVester;
+        fxdxVester = _fxdxVester;
+        flpVester = _flpVester;
     }
 
-    function updateEsGmxHandlers() external onlyGov {
-        timelock.managedSetHandler(esGmx, rewardRouter, true);
+    function updateEsFxdxHandlers() external onlyGov {
+        timelock.managedSetHandler(esFxdx, rewardRouter, true);
 
-        timelock.managedSetHandler(esGmx, stakedGmxDistributor, true);
-        timelock.managedSetHandler(esGmx, stakedGlpDistributor, true);
+        timelock.managedSetHandler(esFxdx, stakedFxdxDistributor, true);
+        timelock.managedSetHandler(esFxdx, stakedFlpDistributor, true);
 
-        timelock.managedSetHandler(esGmx, stakedGmxTracker, true);
-        timelock.managedSetHandler(esGmx, stakedGlpTracker, true);
+        timelock.managedSetHandler(esFxdx, stakedFxdxTracker, true);
+        timelock.managedSetHandler(esFxdx, stakedFlpTracker, true);
 
-        timelock.managedSetHandler(esGmx, gmxVester, true);
-        timelock.managedSetHandler(esGmx, glpVester, true);
+        timelock.managedSetHandler(esFxdx, fxdxVester, true);
+        timelock.managedSetHandler(esFxdx, flpVester, true);
     }
 
     function enableRewardRouter() external onlyGov {
         timelock.managedSetHandler(flpManager, rewardRouter, true);
 
-        timelock.managedSetHandler(stakedGmxTracker, rewardRouter, true);
-        timelock.managedSetHandler(bonusGmxTracker, rewardRouter, true);
-        timelock.managedSetHandler(feeGmxTracker, rewardRouter, true);
+        timelock.managedSetHandler(stakedFxdxTracker, rewardRouter, true);
+        timelock.managedSetHandler(bonusFxdxTracker, rewardRouter, true);
+        timelock.managedSetHandler(feeFxdxTracker, rewardRouter, true);
 
-        timelock.managedSetHandler(feeGlpTracker, rewardRouter, true);
-        timelock.managedSetHandler(stakedGlpTracker, rewardRouter, true);
+        timelock.managedSetHandler(feeFlpTracker, rewardRouter, true);
+        timelock.managedSetHandler(stakedFlpTracker, rewardRouter, true);
 
-        timelock.managedSetHandler(esGmx, rewardRouter, true);
+        timelock.managedSetHandler(esFxdx, rewardRouter, true);
 
-        timelock.managedSetMinter(bnGmx, rewardRouter, true);
+        timelock.managedSetMinter(bnFxdx, rewardRouter, true);
 
-        timelock.managedSetMinter(esGmx, gmxVester, true);
-        timelock.managedSetMinter(esGmx, glpVester, true);
+        timelock.managedSetMinter(esFxdx, fxdxVester, true);
+        timelock.managedSetMinter(esFxdx, flpVester, true);
 
-        timelock.managedSetHandler(gmxVester, rewardRouter, true);
-        timelock.managedSetHandler(glpVester, rewardRouter, true);
+        timelock.managedSetHandler(fxdxVester, rewardRouter, true);
+        timelock.managedSetHandler(flpVester, rewardRouter, true);
 
-        timelock.managedSetHandler(feeGmxTracker, gmxVester, true);
-        timelock.managedSetHandler(stakedGlpTracker, glpVester, true);
+        timelock.managedSetHandler(feeFxdxTracker, fxdxVester, true);
+        timelock.managedSetHandler(stakedFlpTracker, flpVester, true);
     }
 }

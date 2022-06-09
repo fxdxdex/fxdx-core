@@ -4,15 +4,15 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 const { ArgumentParser } = require('argparse');
 const ethers = require('ethers')
 
-const ARBITRUM_SUBGRAPH_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/gdev8317/gmx-arbitrum-referrals-staging'
-const AVALANCHE_SUBGRAPH_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/gdev8317/gmx-avalanche-referrals-staging'
+const ARBITRUM_SUBGRAPH_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/gdev8317/fxdx-arbitrum-referrals-staging'
+const AVALANCHE_SUBGRAPH_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/gdev8317/fxdx-avalanche-referrals-staging'
 
 const BigNumber = ethers.BigNumber
 const { formatUnits, parseUnits } = ethers.utils
 const SHARE_DIVISOR = BigNumber.from("1000000000") // 1e9
-const BONUS_TIER = 2 // for EsGMX distributions
+const BONUS_TIER = 2 // for EsFXDX distributions
 const USD_DECIMALS = 30
-const GMX_DECIMALS = 18
+const FXDX_DECIMALS = 18
 
 function stringToFixed(s, n) {
   return Number(s).toFixed(n)
@@ -69,12 +69,12 @@ async function getReferrersTiers(network) {
   }, {})
 }
 
-async function queryDistributionData(network, fromTimestamp, toTimestamp, account, gmxPrice, esgmxRewards) {
-  if (gmxPrice) {
-    gmxPrice = parseUnits(gmxPrice, USD_DECIMALS)
+async function queryDistributionData(network, fromTimestamp, toTimestamp, account, fxdxPrice, esfxdxRewards) {
+  if (fxdxPrice) {
+    fxdxPrice = parseUnits(fxdxPrice, USD_DECIMALS)
   }
-  if (esgmxRewards) {
-    esgmxRewards = parseUnits(esgmxRewards, GMX_DECIMALS)
+  if (esfxdxRewards) {
+    esfxdxRewards = parseUnits(esfxdxRewards, FXDX_DECIMALS)
   }
   let referrerCondition = ""
   let referralCondition = ""
@@ -200,30 +200,30 @@ async function queryDistributionData(network, fromTimestamp, toTimestamp, accoun
     data.allReferrersRebateUsd = allReferrersRebateUsd
     data.account = account
     data.share = data.rebateUsd.mul(SHARE_DIVISOR).div(allReferrersRebateUsd)
-    data.esgmxUsd
+    data.esfxdxUsd
   })
-  if (gmxPrice && esgmxRewards) {
-    const esgmxRewardsUsdLimit = esgmxRewards.mul(gmxPrice).div(expandDecimals(1, GMX_DECIMALS))
-    let esgmxRewardsUsdTotal = BigNumber.from(0)
+  if (fxdxPrice && esfxdxRewards) {
+    const esfxdxRewardsUsdLimit = esfxdxRewards.mul(fxdxPrice).div(expandDecimals(1, FXDX_DECIMALS))
+    let esfxdxRewardsUsdTotal = BigNumber.from(0)
     Object.values(referrersRebatesData).forEach(data => {
       if (data.tierId !== BONUS_TIER) {
         return
       }
-      data.esgmxRewardsUsd = data.volume.div(1000).div(20) // 0.1% margin fee, 0.05% of fee is EsGMX bonus rewards
-      data.esgmxRewards = data.esgmxRewardsUsd
+      data.esfxdxRewardsUsd = data.volume.div(1000).div(20) // 0.1% margin fee, 0.05% of fee is EsFXDX bonus rewards
+      data.esfxdxRewards = data.esfxdxRewardsUsd
         .mul(expandDecimals(1, USD_DECIMALS))
-        .div(gmxPrice)
+        .div(fxdxPrice)
         .div(expandDecimals(1, 12))
-      esgmxRewardsUsdTotal = esgmxRewardsUsdTotal.add(data.esgmxRewardsUsd)
+      esfxdxRewardsUsdTotal = esfxdxRewardsUsdTotal.add(data.esfxdxRewardsUsd)
     })
 
-    if (esgmxRewardsUsdTotal.gt(esgmxRewardsUsdLimit)) {
-      const denominator = esgmxRewardsUsdTotal.mul(USD_DECIMALS).div(esgmxRewardsUsdLimit)
+    if (esfxdxRewardsUsdTotal.gt(esfxdxRewardsUsdLimit)) {
+      const denominator = esfxdxRewardsUsdTotal.mul(USD_DECIMALS).div(esfxdxRewardsUsdLimit)
       Object.values(referrersRebatesData).forEach(data => {
-        data.esgmxRewardsUsd = data.esgmxRewardsUsd.mul(USD_DECIMALS).div(denominator)
-        data.esgmxRewards = data.esgmxRewardsUsd
+        data.esfxdxRewardsUsd = data.esfxdxRewardsUsd.mul(USD_DECIMALS).div(denominator)
+        data.esfxdxRewards = data.esfxdxRewardsUsd
           .mul(expandDecimals(1, USD_DECIMALS))
-          .div(gmxPrice)
+          .div(fxdxPrice)
           .div(expandDecimals(1, 12))
       })
     }
@@ -269,8 +269,8 @@ async function queryDistributionData(network, fromTimestamp, toTimestamp, accoun
       "rebateUsd, $": stringToFixed(formatUnits(data.rebateUsd, USD_DECIMALS), 4),
       trades: data.tradesCount,
       tierId: data.tierId,
-      "esgmxRewards, $": data.esgmxRewardsUsd ? formatUnits(data.esgmxRewardsUsd, USD_DECIMALS) : null,
-      esgmxRewards: data.esgmxRewards ? formatUnits(data.esgmxRewards, GMX_DECIMALS) : null,
+      "esfxdxRewards, $": data.esfxdxRewardsUsd ? formatUnits(data.esfxdxRewardsUsd, USD_DECIMALS) : null,
+      esfxdxRewards: data.esfxdxRewards ? formatUnits(data.esfxdxRewards, FXDX_DECIMALS) : null,
     })
     output.referrers.push({
       account: data.account,
@@ -280,8 +280,8 @@ async function queryDistributionData(network, fromTimestamp, toTimestamp, accoun
       rebateUsd: data.rebateUsd.toString(),
       totalRebateUsd: data.totalRebateUsd.toString(),
       tierId: data.tierId,
-      esgmxRewards: data.esgmxRewards ? data.esgmxRewards.toString() : null,
-      esgmxRewardsUsd: data.esgmxRewardsUsd ? data.esgmxRewardsUsd.toString() : null,
+      esfxdxRewards: data.esfxdxRewards ? data.esfxdxRewards.toString() : null,
+      esfxdxRewardsUsd: data.esfxdxRewardsUsd ? data.esfxdxRewardsUsd.toString() : null,
     })
   }
   console.table(consoleData)
@@ -352,9 +352,9 @@ async function main() {
     default: "2022-04-27"
   });
   parser.add_argument('-a', '--account', { help: 'Account address' })
-  parser.add_argument('-g', '--gmx-price', { help: 'GMX TWAP price' })
-  parser.add_argument('-e', '--esgmx-rewards', {
-    help: 'Amount of EsGMX to distribute to Tier 3',
+  parser.add_argument('-g', '--fxdx-price', { help: 'FXDX TWAP price' })
+  parser.add_argument('-e', '--esfxdx-rewards', {
+    help: 'Amount of EsFXDX to distribute to Tier 3',
     default: "5000"
   })
 
@@ -378,8 +378,8 @@ async function main() {
     fromTimestamp,
     toTimestamp,
     args.account,
-    args.gmx_price,
-    args.esgmx_rewards
+    args.fxdx_price,
+    args.esfxdx_rewards
   )
 }
 

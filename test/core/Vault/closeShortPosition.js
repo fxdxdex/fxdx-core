@@ -13,7 +13,7 @@ describe("Vault.closeShortPosition", function () {
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
   let vaultPriceFeed
-  let usdg
+  let usdf
   let router
   let bnb
   let bnbPriceFeed
@@ -35,20 +35,20 @@ describe("Vault.closeShortPosition", function () {
     daiPriceFeed = await deployContract("PriceFeed", [])
 
     vault = await deployContract("Vault", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    await initVault(vault, router, usdg, vaultPriceFeed)
+    await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
-    yieldTracker0 = await deployContract("YieldTracker", [usdg.address])
+    yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
 
     await yieldTracker0.setDistributor(distributor0.address)
     await distributor0.setDistribution([yieldTracker0.address], [1000], [bnb.address])
 
     await bnb.mint(distributor0.address, 5000)
-    await usdg.setYieldTrackers([yieldTracker0.address])
+    await usdf.setYieldTrackers([yieldTracker0.address])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -78,7 +78,7 @@ describe("Vault.closeShortPosition", function () {
 
     await dai.mint(user0.address, expandDecimals(1000, 18))
     await dai.connect(user0).transfer(vault.address, expandDecimals(100, 18))
-    await vault.buyUSDG(dai.address, user1.address)
+    await vault.buyUSDF(dai.address, user1.address)
     expect(await vault.feeReserves(dai.address)).eq("40000000000000000") // 0.04
 
     await btcPriceFeed.setLatestAnswer(toChainlinkPrice(40000))
@@ -155,7 +155,7 @@ describe("Vault.closeShortPosition", function () {
 
     await dai.mint(user0.address, expandDecimals(1000, 18))
     await dai.connect(user0).transfer(vault.address, expandDecimals(100, 18))
-    await vault.buyUSDG(dai.address, user1.address)
+    await vault.buyUSDF(dai.address, user1.address)
     expect(await vault.feeReserves(dai.address)).eq("40000000000000000") // 0.04
 
     await btcPriceFeed.setLatestAnswer(toChainlinkPrice(40000))

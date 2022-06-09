@@ -13,7 +13,7 @@ describe("Vault.liquidateLongPosition", function () {
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
   let vaultPriceFeed
-  let usdg
+  let usdf
   let router
   let bnb
   let bnbPriceFeed
@@ -29,7 +29,7 @@ describe("Vault.liquidateLongPosition", function () {
   let yieldTracker0
 
   let flpManager
-  let glp
+  let flp
 
   beforeEach(async () => {
     bnb = await deployContract("Token", [])
@@ -48,27 +48,27 @@ describe("Vault.liquidateLongPosition", function () {
     busdPriceFeed = await deployContract("PriceFeed", [])
 
     vault = await deployContract("Vault", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    await initVault(vault, router, usdg, vaultPriceFeed)
+    await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
-    yieldTracker0 = await deployContract("YieldTracker", [usdg.address])
+    yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
 
     await yieldTracker0.setDistributor(distributor0.address)
     await distributor0.setDistribution([yieldTracker0.address], [1000], [bnb.address])
 
     await bnb.mint(distributor0.address, 5000)
-    await usdg.setYieldTrackers([yieldTracker0.address])
+    await usdf.setYieldTrackers([yieldTracker0.address])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(dai.address, daiPriceFeed.address, 8, false)
 
-    glp = await deployContract("GLP", [])
-    flpManager = await deployContract("FlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
+    flp = await deployContract("FLP", [])
+    flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
   })
 
   it("liquidate long", async () => {
@@ -86,18 +86,18 @@ describe("Vault.liquidateLongPosition", function () {
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 250000) // 0.0025 BTC => 100 USD
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
 
     await btc.mint(user0.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 25000) // 0.00025 BTC => 10 USD
 
-    expect(await flpManager.getAumInUsdg(false)).eq("99700000000000000000") // 99.7
-    expect(await flpManager.getAumInUsdg(true)).eq("102192500000000000000") // 102.1925
+    expect(await flpManager.getAumInUsdf(false)).eq("99700000000000000000") // 99.7
+    expect(await flpManager.getAumInUsdf(true)).eq("102192500000000000000") // 102.1925
 
     await vault.connect(user0).increasePosition(user0.address, btc.address, btc.address, toUsd(90), true)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("99702400000000000000") // 99.7024
-    expect(await flpManager.getAumInUsdg(true)).eq("100192710000000000000") // 100.19271
+    expect(await flpManager.getAumInUsdf(false)).eq("99702400000000000000") // 99.7024
+    expect(await flpManager.getAumInUsdf(true)).eq("100192710000000000000") // 100.19271
 
     let position = await vault.getPosition(user0.address, btc.address, btc.address, true)
     expect(position[0]).eq(toUsd(90)) // size
@@ -156,14 +156,14 @@ describe("Vault.liquidateLongPosition", function () {
     await vault.setLiquidator(user1.address, true)
     expect(await vault.isLiquidator(user1.address)).eq(true)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("99064997000000000000") // 99.064997
-    expect(await flpManager.getAumInUsdg(true)).eq("101418485000000000000") // 101.418485
+    expect(await flpManager.getAumInUsdf(false)).eq("99064997000000000000") // 99.064997
+    expect(await flpManager.getAumInUsdf(true)).eq("101418485000000000000") // 101.418485
 
     const tx = await vault.connect(user1).liquidatePosition(user0.address, btc.address, btc.address, true, user2.address)
     await reportGasUsed(provider, tx, "liquidatePosition gas used")
 
-    expect(await flpManager.getAumInUsdg(false)).eq("101522097000000000000") // 101.522097
-    expect(await flpManager.getAumInUsdg(true)).eq("114113985000000000000") // 114.113985
+    expect(await flpManager.getAumInUsdf(false)).eq("101522097000000000000") // 101.522097
+    expect(await flpManager.getAumInUsdf(true)).eq("114113985000000000000") // 114.113985
 
     position = await vault.getPosition(user0.address, btc.address, btc.address, true)
     expect(position[0]).eq(0) // size
@@ -188,7 +188,7 @@ describe("Vault.liquidateLongPosition", function () {
     await vault.withdrawFees(btc.address, user0.address)
 
     await btc.mint(vault.address, 1000)
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
   })
 
   it("automatic stop-loss", async () => {
@@ -206,7 +206,7 @@ describe("Vault.liquidateLongPosition", function () {
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 5000000) // 0.05 BTC => 2000 USD
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 250000) // 0.0025 BTC => 100 USD
@@ -293,7 +293,7 @@ describe("Vault.liquidateLongPosition", function () {
     await vault.withdrawFees(btc.address, user0.address)
 
     await btc.mint(vault.address, 1000)
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
   })
 
   it("excludes AMM price", async () => {
@@ -323,7 +323,7 @@ describe("Vault.liquidateLongPosition", function () {
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 250000) // 0.0025 BTC => 100 USD
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
 
     await btc.mint(user0.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 25000) // 0.00025 BTC => 10 USD

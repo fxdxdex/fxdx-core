@@ -14,8 +14,8 @@ describe("Vault.increaseShortPosition", function () {
   let vault
   let flpManager
   let vaultPriceFeed
-  let glp
-  let usdg
+  let flp
+  let usdf
   let router
   let bnb
   let bnbPriceFeed
@@ -37,22 +37,22 @@ describe("Vault.increaseShortPosition", function () {
     daiPriceFeed = await deployContract("PriceFeed", [])
 
     vault = await deployContract("Vault", [])
-    glp = await deployContract("GLP", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    flp = await deployContract("FLP", [])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    const initVaultResult = await initVault(vault, router, usdg, vaultPriceFeed)
-    flpManager = await deployContract("FlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
+    const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
 
     distributor0 = await deployContract("TimeDistributor", [])
-    yieldTracker0 = await deployContract("YieldTracker", [usdg.address])
+    yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
 
     await yieldTracker0.setDistributor(distributor0.address)
     await distributor0.setDistribution([yieldTracker0.address], [1000], [bnb.address])
 
     await bnb.mint(distributor0.address, 5000)
-    await usdg.setYieldTrackers([yieldTracker0.address])
+    await usdf.setYieldTrackers([yieldTracker0.address])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -83,7 +83,7 @@ describe("Vault.increaseShortPosition", function () {
       8, // _tokenDecimals
       10000, // _tokenWeight
       75, // _minProfitBps
-      0, // _maxUsdgAmount
+      0, // _maxUsdfAmount
       false, // _isStable
       false // _isShortable
     )
@@ -141,8 +141,8 @@ describe("Vault.increaseShortPosition", function () {
     let globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(0)
-    expect(await flpManager.getAumInUsdg(true)).eq(0)
-    expect(await flpManager.getAumInUsdg(false)).eq(0)
+    expect(await flpManager.getAumInUsdf(true)).eq(0)
+    expect(await flpManager.getAumInUsdf(false)).eq(0)
 
     await vault.setFees(
       50, // _taxBasisPoints
@@ -179,22 +179,22 @@ describe("Vault.increaseShortPosition", function () {
       .to.be.revertedWith("Vault: reserve exceeds pool")
 
     expect(await vault.feeReserves(dai.address)).eq(0)
-    expect(await vault.usdgAmounts(dai.address)).eq(0)
+    expect(await vault.usdfAmounts(dai.address)).eq(0)
     expect(await vault.poolAmounts(dai.address)).eq(0)
 
     expect(await vault.getRedemptionCollateralUsd(dai.address)).eq(0)
-    await vault.buyUSDG(dai.address, user1.address)
+    await vault.buyUSDF(dai.address, user1.address)
     expect(await vault.getRedemptionCollateralUsd(dai.address)).eq("499800000000000000000000000000000")
 
     expect(await vault.feeReserves(dai.address)).eq("200000000000000000") // 0.2
-    expect(await vault.usdgAmounts(dai.address)).eq("499800000000000000000") // 499.8
+    expect(await vault.usdfAmounts(dai.address)).eq("499800000000000000000") // 499.8
     expect(await vault.poolAmounts(dai.address)).eq("499800000000000000000") // 499.8
 
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(0)
-    expect(await flpManager.getAumInUsdg(true)).eq("499800000000000000000")
-    expect(await flpManager.getAumInUsdg(false)).eq("499800000000000000000")
+    expect(await flpManager.getAumInUsdf(true)).eq("499800000000000000000")
+    expect(await flpManager.getAumInUsdf(false)).eq("499800000000000000000")
 
     await dai.connect(user0).transfer(vault.address, expandDecimals(20, 18))
     await expect(vault.connect(user0).increasePosition(user0.address, dai.address, btc.address, toUsd(501), false))
@@ -235,7 +235,7 @@ describe("Vault.increaseShortPosition", function () {
     expect(position[7]).eq(blockTime) // lastIncreasedTime
 
     expect(await vault.feeReserves(dai.address)).eq("290000000000000000") // 0.29
-    expect(await vault.usdgAmounts(dai.address)).eq("499800000000000000000") // 499.8
+    expect(await vault.usdfAmounts(dai.address)).eq("499800000000000000000") // 499.8
     expect(await vault.poolAmounts(dai.address)).eq("499800000000000000000") // 499.8
 
     expect(await vault.globalShortSizes(btc.address)).eq(toUsd(90))
@@ -244,8 +244,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(toUsd(2.25))
-    expect(await flpManager.getAumInUsdg(true)).eq("502050000000000000000")
-    expect(await flpManager.getAumInUsdg(false)).eq("499800000000000000000")
+    expect(await flpManager.getAumInUsdf(true)).eq("502050000000000000000")
+    expect(await flpManager.getAumInUsdf(false)).eq("499800000000000000000")
 
     let delta = await vault.getPositionDelta(user0.address, dai.address, btc.address, false)
     expect(delta[0]).eq(false)
@@ -262,8 +262,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(toUsd(4.5))
-    expect(await flpManager.getAumInUsdg(true)).eq("504300000000000000000") // 499.8 + 4.5
-    expect(await flpManager.getAumInUsdg(false)).eq("504300000000000000000") // 499.8 + 4.5
+    expect(await flpManager.getAumInUsdf(true)).eq("504300000000000000000") // 499.8 + 4.5
+    expect(await flpManager.getAumInUsdf(false)).eq("504300000000000000000") // 499.8 + 4.5
 
     await vault.connect(user0).decreasePosition(user0.address, dai.address, btc.address, toUsd(3), toUsd(50), false, user2.address)
 
@@ -282,7 +282,7 @@ describe("Vault.increaseShortPosition", function () {
     expect(delta[1]).eq(toUsd(2))
 
     expect(await vault.feeReserves(dai.address)).eq("340000000000000000") // 0.18
-    expect(await vault.usdgAmounts(dai.address)).eq("499800000000000000000") // 499.8
+    expect(await vault.usdfAmounts(dai.address)).eq("499800000000000000000") // 499.8
     expect(await vault.poolAmounts(dai.address)).eq("502300000000000000000") // 502.3
 
     expect(await vault.globalShortSizes(btc.address)).eq(toUsd(40))
@@ -291,8 +291,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(toUsd(2))
-    expect(await flpManager.getAumInUsdg(true)).eq("504300000000000000000") // 499.8 + 4.5
-    expect(await flpManager.getAumInUsdg(false)).eq("504300000000000000000") // 499.8 + 4.5
+    expect(await flpManager.getAumInUsdf(true)).eq("504300000000000000000") // 499.8 + 4.5
+    expect(await flpManager.getAumInUsdf(false)).eq("504300000000000000000") // 499.8 + 4.5
 
     await dai.mint(vault.address, expandDecimals(50, 18))
     await vault.connect(user1).increasePosition(user1.address, dai.address, btc.address, toUsd(200), false)
@@ -303,8 +303,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(false)
     expect(await globalDelta[1]).eq(toUsd(2))
-    expect(await flpManager.getAumInUsdg(true)).eq("504300000000000000000") // 502.3 + 2
-    expect(await flpManager.getAumInUsdg(false)).eq("504300000000000000000") // 502.3 + 2
+    expect(await flpManager.getAumInUsdf(true)).eq("504300000000000000000") // 502.3 + 2
+    expect(await flpManager.getAumInUsdf(false)).eq("504300000000000000000") // 502.3 + 2
 
     await btcPriceFeed.setLatestAnswer(toChainlinkPrice(40000))
     await btcPriceFeed.setLatestAnswer(toChainlinkPrice(40000))
@@ -321,8 +321,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(true)
     expect(await globalDelta[1]).eq("3761904761904761904761904761904")
-    expect(await flpManager.getAumInUsdg(true)).eq("498538095238095238095") // 502.3 + 1 - 4.76 => 498.53
-    expect(await flpManager.getAumInUsdg(false)).eq("492776190476190476190") // 492.77619047619047619
+    expect(await flpManager.getAumInUsdf(true)).eq("498538095238095238095") // 502.3 + 1 - 4.76 => 498.53
+    expect(await flpManager.getAumInUsdf(false)).eq("492776190476190476190") // 492.77619047619047619
 
     await dai.mint(vault.address, expandDecimals(20, 18))
     await vault.connect(user2).increasePosition(user2.address, dai.address, btc.address, toUsd(60), false)
@@ -333,8 +333,8 @@ describe("Vault.increaseShortPosition", function () {
     globalDelta = await vault.getGlobalShortDelta(btc.address)
     expect(await globalDelta[0]).eq(true)
     expect(await globalDelta[1]).eq("2261904761904761904761904761904")
-    expect(await flpManager.getAumInUsdg(true)).eq("500038095238095238095") // 500.038095238095238095
-    expect(await flpManager.getAumInUsdg(false)).eq("492776190476190476190") // 492.77619047619047619
+    expect(await flpManager.getAumInUsdf(true)).eq("500038095238095238095") // 500.038095238095238095
+    expect(await flpManager.getAumInUsdf(false)).eq("492776190476190476190") // 492.77619047619047619
 
     await dai.mint(vault.address, expandDecimals(20, 18))
 

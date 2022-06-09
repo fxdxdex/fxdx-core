@@ -21,9 +21,9 @@ const errors = [
   "Vault: invalid tokenAmount",
   "Vault: _token not whitelisted",
   "Vault: invalid tokenAmount",
-  "Vault: invalid usdgAmount",
+  "Vault: invalid usdfAmount",
   "Vault: _token not whitelisted",
-  "Vault: invalid usdgAmount",
+  "Vault: invalid usdfAmount",
   "Vault: invalid redemptionAmount",
   "Vault: invalid amountOut",
   "Vault: swaps not enabled",
@@ -54,7 +54,7 @@ const errors = [
   "Vault: _indexToken not shortable",
   "Vault: invalid increase",
   "Vault: reserve exceeds pool",
-  "Vault: max USDG exceeded",
+  "Vault: max USDF exceeded",
   "Vault: reserve exceeds pool",
   "Vault: forbidden",
   "Vault: forbidden",
@@ -74,10 +74,10 @@ async function initVaultUtils(vault) {
   return vaultUtils
 }
 
-async function initVault(vault, router, usdg, priceFeed) {
+async function initVault(vault, router, usdf, priceFeed) {
   await vault.initialize(
     router.address, // router
-    usdg.address, // usdg
+    usdf.address, // usdf
     priceFeed.address, // priceFeed
     toUsd(5), // liquidationFeeUsd
     600, // fundingRateFactor
@@ -106,7 +106,7 @@ function getBnbConfig(bnb, bnbPriceFeed) {
     18, // _tokenDecimals
     10000, // _tokenWeight
     75, // _minProfitBps,
-    0, // _maxUsdgAmount
+    0, // _maxUsdfAmount
     false, // _isStable
     true // _isShortable
   ]
@@ -118,7 +118,7 @@ function getEthConfig(eth, ethPriceFeed) {
     18, // _tokenDecimals
     10000, // _tokenWeight
     75, // _minProfitBps
-    0, // _maxUsdgAmount
+    0, // _maxUsdfAmount
     false, // _isStable
     true // _isShortable
   ]
@@ -130,7 +130,7 @@ function getBtcConfig(btc, btcPriceFeed) {
     8, // _tokenDecimals
     10000, // _tokenWeight
     75, // _minProfitBps
-    0, // _maxUsdgAmount
+    0, // _maxUsdfAmount
     false, // _isStable
     true // _isShortable
   ]
@@ -142,7 +142,7 @@ function getDaiConfig(dai, daiPriceFeed) {
     18, // _tokenDecimals
     10000, // _tokenWeight
     75, // _minProfitBps
-    0, // _maxUsdgAmount
+    0, // _maxUsdfAmount
     true, // _isStable
     false // _isShortable
   ]

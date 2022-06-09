@@ -2,8 +2,8 @@ node_modules/
 typechain/
 env.json
 .tmp-addresses*.json
-data/gmxMigration
-data/esGmxDistribution
+data/fxdxMigration
+data/esFxdxDistribution
 data/bonds
 data/batchSend
 data/nft

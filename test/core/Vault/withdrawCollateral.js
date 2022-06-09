@@ -13,7 +13,7 @@ describe("Vault.withdrawCollateral", function () {
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
   let vaultPriceFeed
-  let usdg
+  let usdf
   let router
   let bnb
   let bnbPriceFeed
@@ -25,7 +25,7 @@ describe("Vault.withdrawCollateral", function () {
   let yieldTracker0
 
   let flpManager
-  let glp
+  let flp
 
   beforeEach(async () => {
     bnb = await deployContract("Token", [])
@@ -38,27 +38,27 @@ describe("Vault.withdrawCollateral", function () {
     daiPriceFeed = await deployContract("PriceFeed", [])
 
     vault = await deployContract("Vault", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    const _ = await initVault(vault, router, usdg, vaultPriceFeed)
+    const _ = await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
-    yieldTracker0 = await deployContract("YieldTracker", [usdg.address])
+    yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
 
     await yieldTracker0.setDistributor(distributor0.address)
     await distributor0.setDistribution([yieldTracker0.address], [1000], [bnb.address])
 
     await bnb.mint(distributor0.address, 5000)
-    await usdg.setYieldTrackers([yieldTracker0.address])
+    await usdf.setYieldTrackers([yieldTracker0.address])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(dai.address, daiPriceFeed.address, 8, false)
 
-    glp = await deployContract("GLP", [])
-    flpManager = await deployContract("FlpManager", [vault.address, usdg.address, glp.address, 24 * 60 * 60])
+    flp = await deployContract("FLP", [])
+    flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
   })
 
   it("withdraw collateral", async () => {
@@ -73,7 +73,7 @@ describe("Vault.withdrawCollateral", function () {
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 250000) // 0.0025 BTC => 100 USD
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
 
     await btc.mint(user0.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 25000) // 0.00025 BTC => 10 USD
@@ -157,7 +157,7 @@ describe("Vault.withdrawCollateral", function () {
 
     await btc.mint(user1.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 250000) // 0.0025 BTC => 100 USD
-    await vault.buyUSDG(btc.address, user1.address)
+    await vault.buyUSDF(btc.address, user1.address)
 
     await btc.mint(user0.address, expandDecimals(1, 8))
     await btc.connect(user1).transfer(vault.address, 25000) // 0.00025 BTC => 10 USD
@@ -191,51 +191,51 @@ describe("Vault.withdrawCollateral", function () {
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(500))
 
     await bnb.mint(vault.address, expandDecimals(10, 18))
-    await vault.buyUSDG(bnb.address, user1.address)
+    await vault.buyUSDF(bnb.address, user1.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("4985000000000000000000") // 4985
-    expect(await flpManager.getAumInUsdg(true)).eq("4985000000000000000000") // 4985
+    expect(await flpManager.getAumInUsdf(false)).eq("4985000000000000000000") // 4985
+    expect(await flpManager.getAumInUsdf(true)).eq("4985000000000000000000") // 4985
 
     await bnb.mint(vault.address, expandDecimals(1, 18))
     await vault.connect(user0).increasePosition(user0.address, bnb.address, bnb.address, toUsd(2000), true)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("4985000000000000000000") // 4985
-    expect(await flpManager.getAumInUsdg(true)).eq("4985000000000000000000") // 4985
+    expect(await flpManager.getAumInUsdf(false)).eq("4985000000000000000000") // 4985
+    expect(await flpManager.getAumInUsdf(true)).eq("4985000000000000000000") // 4985
 
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(750))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(750))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(750))
 
-    expect(await flpManager.getAumInUsdg(false)).eq("6726500000000000000000") // 6726.5
-    expect(await flpManager.getAumInUsdg(true)).eq("6726500000000000000000") // 6726.5
+    expect(await flpManager.getAumInUsdf(false)).eq("6726500000000000000000") // 6726.5
+    expect(await flpManager.getAumInUsdf(true)).eq("6726500000000000000000") // 6726.5
 
     await bnb.mint(vault.address, expandDecimals(1, 18))
     await vault.connect(user0).increasePosition(user0.address, bnb.address, bnb.address, toUsd(0), true)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("6726500000000000000000") // 6726.5
-    expect(await flpManager.getAumInUsdg(true)).eq("6726500000000000000000") // 6726.5
+    expect(await flpManager.getAumInUsdf(false)).eq("6726500000000000000000") // 6726.5
+    expect(await flpManager.getAumInUsdf(true)).eq("6726500000000000000000") // 6726.5
 
     await vault.connect(user0).decreasePosition(user0.address, bnb.address, bnb.address, toUsd(500), toUsd(0), true, user2.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("6726500000000000000500") // 6726.5000000000000005
-    expect(await flpManager.getAumInUsdg(true)).eq("6726500000000000000500") // 6726.5000000000000005
+    expect(await flpManager.getAumInUsdf(false)).eq("6726500000000000000500") // 6726.5000000000000005
+    expect(await flpManager.getAumInUsdf(true)).eq("6726500000000000000500") // 6726.5000000000000005
 
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(400))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(400))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(400))
 
-    expect(await flpManager.getAumInUsdg(false)).eq("4171733333333333333600") // 4171.7333333333333336
-    expect(await flpManager.getAumInUsdg(true)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(false)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(true)).eq("4171733333333333333600") // 4171.7333333333333336
 
     await vault.connect(user0).decreasePosition(user0.address, bnb.address, bnb.address, toUsd(250), toUsd(0), true, user2.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("4171733333333333333600") // 4171.7333333333333336
-    expect(await flpManager.getAumInUsdg(true)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(false)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(true)).eq("4171733333333333333600") // 4171.7333333333333336
 
     await vault.connect(user0).decreasePosition(user0.address, bnb.address, bnb.address, toUsd(0), toUsd(250), true, user2.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("4171733333333333333600") // 4171.7333333333333336
-    expect(await flpManager.getAumInUsdg(true)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(false)).eq("4171733333333333333600") // 4171.7333333333333336
+    expect(await flpManager.getAumInUsdf(true)).eq("4171733333333333333600") // 4171.7333333333333336
   })
 
   it("withdraw collateral short", async () => {
@@ -249,45 +249,45 @@ describe("Vault.withdrawCollateral", function () {
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(500))
 
     await dai.mint(vault.address, expandDecimals(8000, 18))
-    await vault.buyUSDG(dai.address, user1.address)
+    await vault.buyUSDF(dai.address, user1.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("7976000000000000000000") // 7976
-    expect(await flpManager.getAumInUsdg(true)).eq("7976000000000000000000") // 7976
+    expect(await flpManager.getAumInUsdf(false)).eq("7976000000000000000000") // 7976
+    expect(await flpManager.getAumInUsdf(true)).eq("7976000000000000000000") // 7976
 
     await dai.mint(vault.address, expandDecimals(500, 18))
     await vault.connect(user0).increasePosition(user0.address, dai.address, bnb.address, toUsd(2000), false)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("7976000000000000000000") // 7976
-    expect(await flpManager.getAumInUsdg(true)).eq("7976000000000000000000") // 7976
+    expect(await flpManager.getAumInUsdf(false)).eq("7976000000000000000000") // 7976
+    expect(await flpManager.getAumInUsdf(true)).eq("7976000000000000000000") // 7976
 
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(525))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(525))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(525))
 
-    expect(await flpManager.getAumInUsdg(false)).eq("8076000000000000000000") // 8076
-    expect(await flpManager.getAumInUsdg(true)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(false)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(true)).eq("8076000000000000000000") // 8076
 
     await dai.mint(vault.address, expandDecimals(500, 18))
     await vault.connect(user0).increasePosition(user0.address, dai.address, bnb.address, toUsd(0), false)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("8076000000000000000000") // 8076
-    expect(await flpManager.getAumInUsdg(true)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(false)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(true)).eq("8076000000000000000000") // 8076
 
     await vault.connect(user0).decreasePosition(user0.address, dai.address, bnb.address, toUsd(500), toUsd(0), false, user2.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("8076000000000000000000") // 8076
-    expect(await flpManager.getAumInUsdg(true)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(false)).eq("8076000000000000000000") // 8076
+    expect(await flpManager.getAumInUsdf(true)).eq("8076000000000000000000") // 8076
 
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(475))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(475))
     await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(475))
 
-    expect(await flpManager.getAumInUsdg(false)).eq("7876000000000000000000") // 7876
-    expect(await flpManager.getAumInUsdg(true)).eq("7876000000000000000000") // 7876
+    expect(await flpManager.getAumInUsdf(false)).eq("7876000000000000000000") // 7876
+    expect(await flpManager.getAumInUsdf(true)).eq("7876000000000000000000") // 7876
 
     await vault.connect(user0).decreasePosition(user0.address, dai.address, bnb.address, toUsd(0), toUsd(500), false, user2.address)
 
-    expect(await flpManager.getAumInUsdg(false)).eq("7876000000000000000000") // 7876
-    expect(await flpManager.getAumInUsdg(true)).eq("7876000000000000000000") // 7876
+    expect(await flpManager.getAumInUsdf(false)).eq("7876000000000000000000") // 7876
+    expect(await flpManager.getAumInUsdf(true)).eq("7876000000000000000000") // 7876
   })
 })

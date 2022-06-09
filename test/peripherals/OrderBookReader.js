@@ -18,7 +18,7 @@ describe("OrderBookReader", function () {
   let dai;
   let bnb;
   let vault;
-  let usdg;
+  let usdf;
   let router;
   let vaultPriceFeed;
 
@@ -32,11 +32,11 @@ describe("OrderBookReader", function () {
     bnb = await deployContract("Token", [])
 
     vault = await deployContract("Vault", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    await initVault(vault, router, usdg, vaultPriceFeed);
+    await initVault(vault, router, usdf, vaultPriceFeed);
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
 
     orderBook = await deployContract("OrderBook", [])
@@ -46,8 +46,8 @@ describe("OrderBookReader", function () {
       router.address,
       vault.address,
       bnb.address,
-      usdg.address,
-      400000, 
+      usdf.address,
+      400000,
       expandDecimals(5, 30) // minPurchseTokenAmountUsd
     );
     reader = await deployContract("OrderBookReader", [])

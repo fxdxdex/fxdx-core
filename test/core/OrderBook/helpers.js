@@ -113,7 +113,7 @@ function getSwapFees(token, amount) {
     // ideally to get all this from Vault in runtime
     //
     let feesPoints;
-    if ([dai.address, busd.address, usdg.address].includes(token)) {
+    if ([dai.address, busd.address, usdf.address].includes(token)) {
         feesPoints = 4;
     } else {
         feesPoints = 30;

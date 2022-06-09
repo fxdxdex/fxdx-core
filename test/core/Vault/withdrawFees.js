@@ -13,7 +13,7 @@ describe("Vault.withdrawFees", function () {
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
   let vaultPriceFeed
-  let usdg
+  let usdf
   let router
   let bnb
   let bnbPriceFeed
@@ -35,20 +35,20 @@ describe("Vault.withdrawFees", function () {
     daiPriceFeed = await deployContract("PriceFeed", [])
 
     vault = await deployContract("Vault", [])
-    usdg = await deployContract("USDG", [vault.address])
-    router = await deployContract("Router", [vault.address, usdg.address, bnb.address])
+    usdf = await deployContract("USDF", [vault.address])
+    router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    await initVault(vault, router, usdg, vaultPriceFeed)
+    await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
-    yieldTracker0 = await deployContract("YieldTracker", [usdg.address])
+    yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
 
     await yieldTracker0.setDistributor(distributor0.address)
     await distributor0.setDistribution([yieldTracker0.address], [1000], [bnb.address])
 
     await bnb.mint(distributor0.address, 5000)
-    await usdg.setYieldTrackers([yieldTracker0.address])
+    await usdf.setYieldTrackers([yieldTracker0.address])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -65,20 +65,20 @@ describe("Vault.withdrawFees", function () {
     await bnb.mint(user0.address, expandDecimals(900, 18))
     await bnb.connect(user0).transfer(vault.address, expandDecimals(900, 18))
 
-    expect(await usdg.balanceOf(wallet.address)).eq(0)
-    expect(await usdg.balanceOf(user1.address)).eq(0)
+    expect(await usdf.balanceOf(wallet.address)).eq(0)
+    expect(await usdf.balanceOf(user1.address)).eq(0)
     expect(await vault.feeReserves(bnb.address)).eq(0)
-    expect(await vault.usdgAmounts(bnb.address)).eq(0)
+    expect(await vault.usdfAmounts(bnb.address)).eq(0)
     expect(await vault.poolAmounts(bnb.address)).eq(0)
 
-    await vault.connect(user0).buyUSDG(bnb.address, user1.address)
+    await vault.connect(user0).buyUSDF(bnb.address, user1.address)
 
-    expect(await usdg.balanceOf(wallet.address)).eq(0)
-    expect(await usdg.balanceOf(user1.address)).eq("269190000000000000000000") // 269,190 USDG, 810 fee
+    expect(await usdf.balanceOf(wallet.address)).eq(0)
+    expect(await usdf.balanceOf(user1.address)).eq("269190000000000000000000") // 269,190 USDF, 810 fee
     expect(await vault.feeReserves(bnb.address)).eq("2700000000000000000") // 2.7, 900 * 0.3%
-    expect(await vault.usdgAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
+    expect(await vault.usdfAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
     expect(await vault.poolAmounts(bnb.address)).eq("897300000000000000000") // 897.3
-    expect(await usdg.totalSupply()).eq("269190000000000000000000")
+    expect(await usdf.totalSupply()).eq("269190000000000000000000")
 
     await bnb.mint(user0.address, expandDecimals(200, 18))
     await bnb.connect(user0).transfer(vault.address, expandDecimals(200, 18))
@@ -86,23 +86,23 @@ describe("Vault.withdrawFees", function () {
     await btc.mint(user0.address, expandDecimals(2, 8))
     await btc.connect(user0).transfer(vault.address, expandDecimals(2, 8))
 
-    await vault.connect(user0).buyUSDG(btc.address, user1.address)
-    expect(await vault.usdgAmounts(btc.address)).eq("119640000000000000000000") // 119,640
-    expect(await usdg.totalSupply()).eq("388830000000000000000000") // 388,830
+    await vault.connect(user0).buyUSDF(btc.address, user1.address)
+    expect(await vault.usdfAmounts(btc.address)).eq("119640000000000000000000") // 119,640
+    expect(await usdf.totalSupply()).eq("388830000000000000000000") // 388,830
 
     await btc.mint(user0.address, expandDecimals(2, 8))
     await btc.connect(user0).transfer(vault.address, expandDecimals(2, 8))
 
-    await vault.connect(user0).buyUSDG(btc.address, user1.address)
-    expect(await vault.usdgAmounts(btc.address)).eq("239280000000000000000000") // 239,280
-    expect(await usdg.totalSupply()).eq("508470000000000000000000") // 508,470
+    await vault.connect(user0).buyUSDF(btc.address, user1.address)
+    expect(await vault.usdfAmounts(btc.address)).eq("239280000000000000000000") // 239,280
+    expect(await usdf.totalSupply()).eq("508470000000000000000000") // 508,470
 
-    expect(await vault.usdgAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
+    expect(await vault.usdfAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
     expect(await vault.poolAmounts(bnb.address)).eq("897300000000000000000") // 897.3
 
-    await vault.connect(user0).buyUSDG(bnb.address, user1.address)
+    await vault.connect(user0).buyUSDF(bnb.address, user1.address)
 
-    expect(await vault.usdgAmounts(bnb.address)).eq("329010000000000000000000") // 329,010
+    expect(await vault.usdfAmounts(bnb.address)).eq("329010000000000000000000") // 329,010
     expect(await vault.poolAmounts(bnb.address)).eq("1096700000000000000000") // 1096.7
 
     expect(await vault.feeReserves(bnb.address)).eq("3300000000000000000") // 3.3 BNB
@@ -130,20 +130,20 @@ describe("Vault.withdrawFees", function () {
     await bnb.mint(user0.address, expandDecimals(900, 18))
     await bnb.connect(user0).transfer(vault.address, expandDecimals(900, 18))
 
-    expect(await usdg.balanceOf(wallet.address)).eq(0)
-    expect(await usdg.balanceOf(user1.address)).eq(0)
+    expect(await usdf.balanceOf(wallet.address)).eq(0)
+    expect(await usdf.balanceOf(user1.address)).eq(0)
     expect(await vault.feeReserves(bnb.address)).eq(0)
-    expect(await vault.usdgAmounts(bnb.address)).eq(0)
+    expect(await vault.usdfAmounts(bnb.address)).eq(0)
     expect(await vault.poolAmounts(bnb.address)).eq(0)
 
-    await vault.connect(user0).buyUSDG(bnb.address, user1.address)
+    await vault.connect(user0).buyUSDF(bnb.address, user1.address)
 
-    expect(await usdg.balanceOf(wallet.address)).eq(0)
-    expect(await usdg.balanceOf(user1.address)).eq("269190000000000000000000") // 269,190 USDG, 810 fee
+    expect(await usdf.balanceOf(wallet.address)).eq(0)
+    expect(await usdf.balanceOf(user1.address)).eq("269190000000000000000000") // 269,190 USDF, 810 fee
     expect(await vault.feeReserves(bnb.address)).eq("2700000000000000000") // 2.7, 900 * 0.3%
-    expect(await vault.usdgAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
+    expect(await vault.usdfAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
     expect(await vault.poolAmounts(bnb.address)).eq("897300000000000000000") // 897.3
-    expect(await usdg.totalSupply()).eq("269190000000000000000000")
+    expect(await usdf.totalSupply()).eq("269190000000000000000000")
 
     await bnb.mint(user0.address, expandDecimals(200, 18))
     await bnb.connect(user0).transfer(vault.address, expandDecimals(200, 18))
@@ -151,23 +151,23 @@ describe("Vault.withdrawFees", function () {
     await btc.mint(user0.address, expandDecimals(2, 8))
     await btc.connect(user0).transfer(vault.address, expandDecimals(2, 8))
 
-    await vault.connect(user0).buyUSDG(btc.address, user1.address)
-    expect(await vault.usdgAmounts(btc.address)).eq("119640000000000000000000") // 119,640
-    expect(await usdg.totalSupply()).eq("388830000000000000000000") // 388,830
+    await vault.connect(user0).buyUSDF(btc.address, user1.address)
+    expect(await vault.usdfAmounts(btc.address)).eq("119640000000000000000000") // 119,640
+    expect(await usdf.totalSupply()).eq("388830000000000000000000") // 388,830
 
     await btc.mint(user0.address, expandDecimals(2, 8))
     await btc.connect(user0).transfer(vault.address, expandDecimals(2, 8))
 
-    await vault.connect(user0).buyUSDG(btc.address, user1.address)
-    expect(await vault.usdgAmounts(btc.address)).eq("239280000000000000000000") // 239,280
-    expect(await usdg.totalSupply()).eq("508470000000000000000000") // 508,470
+    await vault.connect(user0).buyUSDF(btc.address, user1.address)
+    expect(await vault.usdfAmounts(btc.address)).eq("239280000000000000000000") // 239,280
+    expect(await usdf.totalSupply()).eq("508470000000000000000000") // 508,470
 
-    expect(await vault.usdgAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
+    expect(await vault.usdfAmounts(bnb.address)).eq("269190000000000000000000") // 269,190
     expect(await vault.poolAmounts(bnb.address)).eq("897300000000000000000") // 897.3
 
-    await vault.connect(user0).buyUSDG(bnb.address, user1.address)
+    await vault.connect(user0).buyUSDF(bnb.address, user1.address)
 
-    expect(await vault.usdgAmounts(bnb.address)).eq("329010000000000000000000") // 329,010
+    expect(await vault.usdfAmounts(bnb.address)).eq("329010000000000000000000") // 329,010
     expect(await vault.poolAmounts(bnb.address)).eq("1096700000000000000000") // 1096.7
 
     expect(await vault.feeReserves(bnb.address)).eq("3300000000000000000") // 3.3 BNB

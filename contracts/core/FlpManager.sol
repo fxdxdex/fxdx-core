@@ -7,7 +7,7 @@ import "../libraries/utils/ReentrancyGuard.sol";
 
 import "./interfaces/IVault.sol";
 import "./interfaces/IFlpManager.sol";
-import "../tokens/interfaces/IUSDG.sol";
+import "../tokens/interfaces/IUSDF.sol";
 import "../tokens/interfaces/IMintable.sol";
 import "../access/Governable.sol";
 
@@ -18,12 +18,12 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
     using SafeERC20 for IERC20;
 
     uint256 public constant PRICE_PRECISION = 10 ** 30;
-    uint256 public constant USDG_DECIMALS = 18;
+    uint256 public constant USDF_DECIMALS = 18;
     uint256 public constant MAX_COOLDOWN_DURATION = 48 hours;
 
     IVault public vault;
-    address public usdg;
-    address public glp;
+    address public usdf;
+    address public flp;
 
     uint256 public override cooldownDuration;
     mapping (address => uint256) public override lastAddedAt;
@@ -38,27 +38,27 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
         address account,
         address token,
         uint256 amount,
-        uint256 aumInUsdg,
-        uint256 glpSupply,
-        uint256 usdgAmount,
+        uint256 aumInUsdf,
+        uint256 flpSupply,
+        uint256 usdfAmount,
         uint256 mintAmount
     );
 
     event RemoveLiquidity(
         address account,
         address token,
-        uint256 glpAmount,
-        uint256 aumInUsdg,
-        uint256 glpSupply,
-        uint256 usdgAmount,
+        uint256 flpAmount,
+        uint256 aumInUsdf,
+        uint256 flpSupply,
+        uint256 usdfAmount,
         uint256 amountOut
     );
 
-    constructor(address _vault, address _usdg, address _glp, uint256 _cooldownDuration) public {
+    constructor(address _vault, address _usdf, address _flp, uint256 _cooldownDuration) public {
         gov = msg.sender;
         vault = IVault(_vault);
-        usdg = _usdg;
-        glp = _glp;
+        usdf = _usdf;
+        flp = _flp;
         cooldownDuration = _cooldownDuration;
     }
 
@@ -80,24 +80,24 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
         aumDeduction = _aumDeduction;
     }
 
-    function addLiquidity(address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) external override nonReentrant returns (uint256) {
+    function addLiquidity(address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant returns (uint256) {
         if (inPrivateMode) { revert("FlpManager: action not enabled"); }
-        return _addLiquidity(msg.sender, msg.sender, _token, _amount, _minUsdg, _minGlp);
+        return _addLiquidity(msg.sender, msg.sender, _token, _amount, _minUsdf, _minFlp);
     }
 
-    function addLiquidityForAccount(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) external override nonReentrant returns (uint256) {
+    function addLiquidityForAccount(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant returns (uint256) {
         _validateHandler();
-        return _addLiquidity(_fundingAccount, _account, _token, _amount, _minUsdg, _minGlp);
+        return _addLiquidity(_fundingAccount, _account, _token, _amount, _minUsdf, _minFlp);
     }
 
-    function removeLiquidity(address _tokenOut, uint256 _glpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
+    function removeLiquidity(address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
         if (inPrivateMode) { revert("FlpManager: action not enabled"); }
-        return _removeLiquidity(msg.sender, _tokenOut, _glpAmount, _minOut, _receiver);
+        return _removeLiquidity(msg.sender, _tokenOut, _flpAmount, _minOut, _receiver);
     }
 
-    function removeLiquidityForAccount(address _account, address _tokenOut, uint256 _glpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
+    function removeLiquidityForAccount(address _account, address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
         _validateHandler();
-        return _removeLiquidity(_account, _tokenOut, _glpAmount, _minOut, _receiver);
+        return _removeLiquidity(_account, _tokenOut, _flpAmount, _minOut, _receiver);
     }
 
     function getAums() public view returns (uint256[] memory) {
@@ -107,9 +107,9 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
         return amounts;
     }
 
-    function getAumInUsdg(bool maximise) public view returns (uint256) {
+    function getAumInUsdf(bool maximise) public view returns (uint256) {
         uint256 aum = getAum(maximise);
-        return aum.mul(10 ** USDG_DECIMALS).div(PRICE_PRECISION);
+        return aum.mul(10 ** USDF_DECIMALS).div(PRICE_PRECISION);
     }
 
     function getAum(bool maximise) public view returns (uint256) {
@@ -157,50 +157,50 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
         return aumDeduction > aum ? 0 : aum.sub(aumDeduction);
     }
 
-    function _addLiquidity(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) private returns (uint256) {
+    function _addLiquidity(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) private returns (uint256) {
         require(_amount > 0, "FlpManager: invalid _amount");
 
-        // calculate aum before buyUSDG
-        uint256 aumInUsdg = getAumInUsdg(true);
-        uint256 glpSupply = IERC20(glp).totalSupply();
+        // calculate aum before buyUSDF
+        uint256 aumInUsdf = getAumInUsdf(true);
+        uint256 flpSupply = IERC20(flp).totalSupply();
 
         IERC20(_token).safeTransferFrom(_fundingAccount, address(vault), _amount);
-        uint256 usdgAmount = vault.buyUSDG(_token, address(this));
-        require(usdgAmount >= _minUsdg, "FlpManager: insufficient USDG output");
+        uint256 usdfAmount = vault.buyUSDF(_token, address(this));
+        require(usdfAmount >= _minUsdf, "FlpManager: insufficient USDF output");
 
-        uint256 mintAmount = aumInUsdg == 0 ? usdgAmount : usdgAmount.mul(glpSupply).div(aumInUsdg);
-        require(mintAmount >= _minGlp, "FlpManager: insufficient GLP output");
+        uint256 mintAmount = aumInUsdf == 0 ? usdfAmount : usdfAmount.mul(flpSupply).div(aumInUsdf);
+        require(mintAmount >= _minFlp, "FlpManager: insufficient FLP output");
 
-        IMintable(glp).mint(_account, mintAmount);
+        IMintable(flp).mint(_account, mintAmount);
 
         lastAddedAt[_account] = block.timestamp;
 
-        emit AddLiquidity(_account, _token, _amount, aumInUsdg, glpSupply, usdgAmount, mintAmount);
+        emit AddLiquidity(_account, _token, _amount, aumInUsdf, flpSupply, usdfAmount, mintAmount);
 
         return mintAmount;
     }
 
-    function _removeLiquidity(address _account, address _tokenOut, uint256 _glpAmount, uint256 _minOut, address _receiver) private returns (uint256) {
-        require(_glpAmount > 0, "FlpManager: invalid _glpAmount");
+    function _removeLiquidity(address _account, address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) private returns (uint256) {
+        require(_flpAmount > 0, "FlpManager: invalid _flpAmount");
         require(lastAddedAt[_account].add(cooldownDuration) <= block.timestamp, "FlpManager: cooldown duration not yet passed");
 
-        // calculate aum before sellUSDG
-        uint256 aumInUsdg = getAumInUsdg(false);
-        uint256 glpSupply = IERC20(glp).totalSupply();
+        // calculate aum before sellUSDF
+        uint256 aumInUsdf = getAumInUsdf(false);
+        uint256 flpSupply = IERC20(flp).totalSupply();
 
-        uint256 usdgAmount = _glpAmount.mul(aumInUsdg).div(glpSupply);
-        uint256 usdgBalance = IERC20(usdg).balanceOf(address(this));
-        if (usdgAmount > usdgBalance) {
-            IUSDG(usdg).mint(address(this), usdgAmount.sub(usdgBalance));
+        uint256 usdfAmount = _flpAmount.mul(aumInUsdf).div(flpSupply);
+        uint256 usdfBalance = IERC20(usdf).balanceOf(address(this));
+        if (usdfAmount > usdfBalance) {
+            IUSDF(usdf).mint(address(this), usdfAmount.sub(usdfBalance));
         }
 
-        IMintable(glp).burn(_account, _glpAmount);
+        IMintable(flp).burn(_account, _flpAmount);
 
-        IERC20(usdg).transfer(address(vault), usdgAmount);
-        uint256 amountOut = vault.sellUSDG(_tokenOut, _receiver);
+        IERC20(usdf).transfer(address(vault), usdfAmount);
+        uint256 amountOut = vault.sellUSDF(_tokenOut, _receiver);
         require(amountOut >= _minOut, "FlpManager: insufficient output");
 
-        emit RemoveLiquidity(_account, _tokenOut, _glpAmount, aumInUsdg, glpSupply, usdgAmount, amountOut);
+        emit RemoveLiquidity(_account, _tokenOut, _flpAmount, aumInUsdf, flpSupply, usdfAmount, amountOut);
 
         return amountOut;
     }

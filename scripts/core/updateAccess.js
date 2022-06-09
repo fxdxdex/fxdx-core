@@ -22,7 +22,7 @@ async function printToken(token, label) {
   console.log(label, "gov", await token.gov())
 }
 
-async function printUsdg(token, label) {
+async function printUsdf(token, label) {
   console.log(label, "isVault", await token.vaults(wallet.address))
   console.log(label, "gov", await token.gov())
 }
@@ -48,62 +48,62 @@ async function updateRewardTrackerGov(rewardTracker, label) {
 }
 
 async function main() {
-  const stakedGmxTracker = await contractAt("RewardTracker", "0x2bD10f8E93B3669b6d42E74eEedC65dd1B0a1342")
-  const bonusGmxTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4")
-  const feeGmxTracker = await contractAt("RewardTracker", "0x4d268a7d4C16ceB5a606c173Bd974984343fea13")
+  const stakedFxdxTracker = await contractAt("RewardTracker", "0x2bD10f8E93B3669b6d42E74eEedC65dd1B0a1342")
+  const bonusFxdxTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4")
+  const feeFxdxTracker = await contractAt("RewardTracker", "0x4d268a7d4C16ceB5a606c173Bd974984343fea13")
 
-  const stakedGlpTracker = await contractAt("RewardTracker", "0x9e295B5B976a184B14aD8cd72413aD846C299660")
-  const feeGlpTracker = await contractAt("RewardTracker", "0xd2D1162512F927a7e282Ef43a362659E4F2a728F")
+  const stakedFlpTracker = await contractAt("RewardTracker", "0x9e295B5B976a184B14aD8cd72413aD846C299660")
+  const feeFlpTracker = await contractAt("RewardTracker", "0xd2D1162512F927a7e282Ef43a362659E4F2a728F")
 
-  await printRewardTracker(stakedGmxTracker, "stakedGmxTracker")
-  await printRewardTracker(bonusGmxTracker, "bonusGmxTracker")
-  await printRewardTracker(feeGmxTracker, "feeGmxTracker")
+  await printRewardTracker(stakedFxdxTracker, "stakedFxdxTracker")
+  await printRewardTracker(bonusFxdxTracker, "bonusFxdxTracker")
+  await printRewardTracker(feeFxdxTracker, "feeFxdxTracker")
 
-  await printRewardTracker(stakedGlpTracker, "stakedGlpTracker")
-  await printRewardTracker(feeGlpTracker, "feeGlpTracker")
+  await printRewardTracker(stakedFlpTracker, "stakedFlpTracker")
+  await printRewardTracker(feeFlpTracker, "feeFlpTracker")
 
-  const glp = await contractAt("MintableBaseToken", "0x01234181085565ed162a948b6a5e88758CD7c7b8")
-  const usdg = await contractAt("USDG", "0xc0253c3cC6aa5Ab407b5795a04c28fB063273894")
-  // const gmx = await contractAt("MintableBaseToken", "0x62edc0692BD897D2295872a9FFCac5425011c661")
-  // const esGmx = await contractAt("MintableBaseToken", "0xFf1489227BbAAC61a9209A08929E4c2a526DdD17")
-  const bnGmx = await contractAt("MintableBaseToken", "0x8087a341D32D445d9aC8aCc9c14F5781E04A26d2")
+  const flp = await contractAt("MintableBaseToken", "0x01234181085565ed162a948b6a5e88758CD7c7b8")
+  const usdf = await contractAt("USDF", "0xc0253c3cC6aa5Ab407b5795a04c28fB063273894")
+  // const fxdx = await contractAt("MintableBaseToken", "0x62edc0692BD897D2295872a9FFCac5425011c661")
+  // const esFxdx = await contractAt("MintableBaseToken", "0xFf1489227BbAAC61a9209A08929E4c2a526DdD17")
+  const bnFxdx = await contractAt("MintableBaseToken", "0x8087a341D32D445d9aC8aCc9c14F5781E04A26d2")
 
-  await printToken(glp, "glp")
-  await printUsdg(usdg, "usdg")
-  // await printToken(gmx, "gmx")
-  // await printToken(esGmx, "esGmx")
-  await printToken(bnGmx, "bnGmx")
+  await printToken(flp, "flp")
+  await printUsdf(usdf, "usdf")
+  // await printToken(fxdx, "fxdx")
+  // await printToken(esFxdx, "esFxdx")
+  await printToken(bnFxdx, "bnFxdx")
 
   // const prevGov = await contractAt("Timelock", "0x4a3930b629f899fe19c1f280c73a376382d61a78")
   // const nextGov = await contractAt("Timelock", "0x09214C0A3594fbcad59A58099b0A63E2B29b15B8")
 
-  // await signalGov(prevGov, glp, nextGov, "glp")
-  // await signalGov(prevGov, gmx, nextGov, "gmx")
-  // await signalGov(prevGov, esGmx, nextGov, "esGmx")
-  // await signalGov(prevGov, bnGmx, nextGov, "bnGmx")
+  // await signalGov(prevGov, flp, nextGov, "flp")
+  // await signalGov(prevGov, fxdx, nextGov, "fxdx")
+  // await signalGov(prevGov, esFxdx, nextGov, "esFxdx")
+  // await signalGov(prevGov, bnFxdx, nextGov, "bnFxdx")
 
-  await updateToken(gmx, "gmx")
-  await updateToken(esGmx, "esGmx")
-  await updateToken(bnGmx, "bnGmx")
+  await updateToken(fxdx, "fxdx")
+  await updateToken(esFxdx, "esFxdx")
+  await updateToken(bnFxdx, "bnFxdx")
 
-  await updateHandler(stakedGmxTracker, "stakedGmxTracker")
-  await updateHandler(bonusGmxTracker, "bonusGmxTracker")
-  await updateHandler(feeGmxTracker, "feeGmxTracker")
-  await updateHandler(stakedGlpTracker, "stakedGlpTracker")
-  await updateHandler(feeGlpTracker, "feeGlpTracker")
+  await updateHandler(stakedFxdxTracker, "stakedFxdxTracker")
+  await updateHandler(bonusFxdxTracker, "bonusFxdxTracker")
+  await updateHandler(feeFxdxTracker, "feeFxdxTracker")
+  await updateHandler(stakedFlpTracker, "stakedFlpTracker")
+  await updateHandler(feeFlpTracker, "feeFlpTracker")
 
-  await updateRewardTrackerGov(stakedGmxTracker, "stakedGmxTracker")
+  await updateRewardTrackerGov(stakedFxdxTracker, "stakedFxdxTracker")
 
-  await updateRewardTrackerGov(bonusGmxTracker, "bonusGmxTracker")
-  await updateRewardTrackerGov(feeGmxTracker, "feeGmxTracker")
-  await updateRewardTrackerGov(stakedGlpTracker, "stakedGlpTracker")
-  await updateRewardTrackerGov(feeGlpTracker, "feeGlpTracker")
+  await updateRewardTrackerGov(bonusFxdxTracker, "bonusFxdxTracker")
+  await updateRewardTrackerGov(feeFxdxTracker, "feeFxdxTracker")
+  await updateRewardTrackerGov(stakedFlpTracker, "stakedFlpTracker")
+  await updateRewardTrackerGov(feeFlpTracker, "feeGlpTracker")
 
-  await updateGov(glp, "glp")
-  await updateGov(usdg, "usdg")
-  // await updateGov(gmx, "gmx")
-  // await updateGov(esGmx, "esGmx")
-  await updateGov(bnGmx, "bnGmx")
+  await updateGov(flp, "flp")
+  await updateGov(usdf, "usdf")
+  // await updateGov(fxdx, "fxdx")
+  // await updateGov(esFxdx, "esFxdx")
+  await updateGov(bnFxdx, "bnFxdx")
 
   const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
   const vaultPriceFeedAddress = await vault.priceFeed()
