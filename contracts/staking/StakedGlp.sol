@@ -5,7 +5,7 @@ pragma solidity 0.6.12;
 import "../libraries/math/SafeMath.sol";
 import "../libraries/token/IERC20.sol";
 
-import "../core/interfaces/IGlpManager.sol";
+import "../core/interfaces/IFlpManager.sol";
 
 import "./interfaces/IRewardTracker.sol";
 import "./interfaces/IRewardTracker.sol";
@@ -21,7 +21,7 @@ contract StakedGlp {
     uint8 public constant decimals = 18;
 
     address public glp;
-    IGlpManager public glpManager;
+    IFlpManager public glpManager;
     address public stakedGlpTracker;
     address public feeGlpTracker;
 
@@ -31,7 +31,7 @@ contract StakedGlp {
 
     constructor(
         address _glp,
-        IGlpManager _glpManager,
+        IFlpManager _glpManager,
         address _stakedGlpTracker,
         address _feeGlpTracker
     ) public {

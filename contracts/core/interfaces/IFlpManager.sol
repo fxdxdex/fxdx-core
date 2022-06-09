@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-interface IGlpManager {
+interface IFlpManager {
     function cooldownDuration() external returns (uint256);
     function lastAddedAt(address _account) external returns (uint256);
     function addLiquidity(address _token, uint256 _amount, uint256 _minUsdg, uint256 _minGlp) external returns (uint256);

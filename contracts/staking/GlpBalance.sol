@@ -4,12 +4,12 @@ pragma solidity 0.6.12;
 
 import "../libraries/math/SafeMath.sol";
 import "../libraries/token/IERC20.sol";
-import "../core/interfaces/IGlpManager.sol";
+import "../core/interfaces/IFlpManager.sol";
 
 contract GlpBalance {
     using SafeMath for uint256;
 
-    IGlpManager public glpManager;
+    IFlpManager public glpManager;
     address public stakedGlpTracker;
 
     mapping (address => mapping (address => uint256)) public allowances;
@@ -17,7 +17,7 @@ contract GlpBalance {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor(
-        IGlpManager _glpManager,
+        IFlpManager _glpManager,
         address _stakedGlpTracker
     ) public {
         glpManager = _glpManager;
