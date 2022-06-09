@@ -30,6 +30,7 @@
     "@uniswap/v3-sdk": "^3.8.2",
     "bn.js": "^5.2.0",
     "csv-parse": "^4.16.3",
+    "hardhat-abi-exporter": "^2.9.0",
     "node-fetch": "^2.6.7"
   }
 }

@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-waffle")
 require("@nomiclabs/hardhat-etherscan")
 require("hardhat-contract-sizer")
 require('@typechain/hardhat')
+require('hardhat-abi-exporter')
 
 const {
   BSC_URL,
@@ -110,4 +111,13 @@ module.exports = {
     outDir: "typechain",
     target: "ethers-v5",
   },
+
+  abiExporter: {
+    path: './data/abi',
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    spacing: 2,
+    pretty: true,
+  }
 }

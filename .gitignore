@@ -9,6 +9,7 @@ data/batchSend
 data/nft
 data/snapshotBalance
 data/holders
+data/abi
 flattened
 distribution-data*.json
 
