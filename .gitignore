@@ -16,3 +16,5 @@ distribution-data*.json
 #Hardhat files
 cache
 artifacts
+
+DEPLOYORDER.md

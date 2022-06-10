@@ -103,9 +103,9 @@ module.exports = {
     btcPriceFeed: { address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d" },
     ethPriceFeed: { address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8" },
     usdtPriceFeed: { address: "0xb1Ac85E779d05C2901812d812210F6dE144b2df0" },
-    usdcPriceFeed: { address: "0xb1Ac85E779d05C2901812d812210F6dE144b2df0" }, // this is USDT price feed, chainlink doesn't have one for USDC
+    usdcPriceFeed: { address: "0xe020609A0C31f4F96dCBB8DF9882218952dD95c4" },
     btc: {
-      address: "0xab952e6801daB7920B65b8aC918FF0F66a8a0F44",
+      address: "0x3FB1f5F1297895f4680Adc1F55CC48e95183C55d",
       decimals: 18
     },
     eth: {
@@ -113,11 +113,11 @@ module.exports = {
       decimals: 18
     },
     usdc: {
-      address: "0xb93cb5F5c6a56e060A5e5A9691229D2a7e2D234A",
+      address: "0x1788509e1Bd6cd9b797B10E344A43d7Aea668Fc5",
       decimals: 18
     },
     usdt: {
-      address: "0xaB7ee1A7D5bc677e3A7ac694f2c156b3fFCaABC1",
+      address: "0x3491d4649aeBC9f46370DFF87c9887f557fb5954",
       decimals: 18
     },
     nativeToken: {

@@ -14,7 +14,7 @@ contract USDF is YieldToken, IUSDF {
         _;
     }
 
-    constructor(address _vault) public YieldToken("USD Gambit", "USDF", 0) {
+    constructor(address _vault) public YieldToken("USD fxdx", "USDF", 0) {
         vaults[_vault] = true;
     }
 
