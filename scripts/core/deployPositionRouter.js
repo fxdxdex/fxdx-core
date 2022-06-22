@@ -4,20 +4,23 @@ const { toUsd } = require("../../test/shared/units")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 async function deployOnArb() {
   const signer = await getFrameSigner()
 
-  const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
+  const vault = await contractAt("Vault", addresses.vault)
   const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  const router = await contractAt("Router", "0xaBBc5F99639c9B6bCb58544ddf04EFA6802F4064", signer)
-  const weth = await contractAt("WETH", "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
-  const referralStorage = await contractAt("ReferralStorage", "0x2249D006A8cCdF4C99Aa6c8B9502a2aeCC923392")
+  const router = await contractAt("Router", addresses.router, signer)
+  // const timelock = await contractAt("Timelock", await vault.gov())
+  // const router = await contractAt("Router", addresses.router)
+  const weth = await contractAt("WETH", tokens.nativeToken.address)
+  const referralStorage = await contractAt("ReferralStorage", addresses.referralStorage)
   const depositFee = "30" // 0.3%
   const minExecutionFee = "300000000000000" // 0.0003 ETH
 
   const positionRouter = await deployContract("PositionRouter", [vault.address, router.address, weth.address, depositFee, minExecutionFee], "PositionRouter", { gasLimit: 125000000 })
-  // const positionRouter = await contractAt("PositionRouter", "0x338fF5b9d64484c8890704a76FE7166Ed7d3AEAd")
+  // const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
 
   await sendTxn(positionRouter.setReferralStorage(referralStorage.address), "positionRouter.setReferralStorage")
   await sendTxn(referralStorage.setHandler(positionRouter.address, true), "referralStorage.setHandler(positionRouter)")

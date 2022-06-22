@@ -4,45 +4,29 @@ const { toChainlinkPrice } = require("../../test/shared/chainlink")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
-async function getArbValues(signer) {
-  const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
-  const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  const reader = await contractAt("Reader", "0x2b43c90D1B727cEe1Df34925bcd5Ace52Ec37694")
+async function getValues(/* signer */) {
+  const vault = await contractAt("Vault", addresses.vault)
+  const timelock = await contractAt("Timelock", await vault.gov()/*, signer*/)
+  const reader = await contractAt("Reader", addresses.reader)
 
-  const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
-  const tokenArr = [usdt]
+  // const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
+  // const tokenArr = [usdt]
+  // const { avax, eth, btc, mim, usdce, usdc } = tokens
+  // const tokenArr = [avax]
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
 
   const vaultTokenInfo = await reader.getVaultTokenInfoV2(vault.address, eth.address, 1, tokenArr.map(t => t.address))
 
   return { vault, timelock, reader, tokenArr, vaultTokenInfo }
 }
 
-async function getAvaxValues(signer) {
-  const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
-  const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  const reader = await contractAt("Reader", "0x2eFEE1950ededC65De687b40Fd30a7B5f4544aBd")
-
-  const { avax, eth, btc, mim, usdce, usdc } = tokens
-  const tokenArr = [avax]
-
-  const vaultTokenInfo = await reader.getVaultTokenInfoV2(vault.address, avax.address, 1, tokenArr.map(t => t.address))
-
-  return { vault, timelock, reader, tokenArr, vaultTokenInfo }
-}
-
 async function main() {
-  const signer = await getFrameSigner()
+  // const signer = await getFrameSigner()
 
-  let vault, timelock, reader, tokenArr, vaultTokenInfo
-
-  if (network === "arbitrum") {
-    ;({ vault, timelock, reader, tokenArr, vaultTokenInfo }  = await getArbValues(signer));
-  }
-
-  if (network === "avax") {
-    ;({ vault, timelock, reader, tokenArr, vaultTokenInfo }  = await getAvaxValues(signer));
-  }
+  const { vault, timelock, reader, tokenArr, vaultTokenInfo } = await getValues(/*signer*/)
 
   console.log("vault", vault.address)
   console.log("timelock", timelock.address)

@@ -2,18 +2,21 @@ const { deployContract, contractAt, sendTxn, writeTmpAddresses } = require("../s
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('../core/tokens')[network];
+const addresses = require('../core/addresses')[network];
 
 async function main() {
   const { nativeToken } = tokens
 
   const vestingDuration = 365 * 24 * 60 * 60
 
-  const flpManager = await contractAt("FlpManager", "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F")
-  const flp = await contractAt("FLP", "0x01234181085565ed162a948b6a5e88758CD7c7b8")
+  const flpManager = await contractAt("FlpManager", addresses.flpManager)
+  const flp = await contractAt("FLP", addresses.flp)
 
-  const fxdx = await contractAt("FXDX", "0x62edc0692BD897D2295872a9FFCac5425011c661");
-  const esFxdx = await contractAt("EsFXDX", "0xFf1489227BbAAC61a9209A08929E4c2a526DdD17");
+  const fxdx = await contractAt("FXDX", addresses.fxdx);
+  const esFxdx = await contractAt("EsFXDX", addresses.esFxdx);
   const bnFxdx = await deployContract("MintableBaseToken", ["Bonus FXDX", "bnFXDX", 0]);
+
+  // const bnFxdx = await contractAt("MintableBaseToken", addresses.bnFxdx)
 
   await sendTxn(esFxdx.setInPrivateTransferMode(true), "esFxdx.setInPrivateTransferMode")
   await sendTxn(flp.setInPrivateTransferMode(true), "flp.setInPrivateTransferMode")
@@ -23,25 +26,40 @@ async function main() {
   await sendTxn(stakedFxdxTracker.initialize([fxdx.address, esFxdx.address], stakedFxdxDistributor.address), "stakedFxdxTracker.initialize")
   await sendTxn(stakedFxdxDistributor.updateLastDistributionTime(), "stakedFxdxDistributor.updateLastDistributionTime")
 
+  // const stakedFxdxTracker = await contractAt("RewardTracker", addresses.stakedFxdxTracker)
+  // const stakedFxdxDistributor = await contractAt("RewardDistributor", addresses.stakedFxdxDistributor)
+
   const bonusFxdxTracker = await deployContract("RewardTracker", ["Staked + Bonus FXDX", "sbFXDX"])
   const bonusFxdxDistributor = await deployContract("BonusDistributor", [bnFxdx.address, bonusFxdxTracker.address])
   await sendTxn(bonusFxdxTracker.initialize([stakedFxdxTracker.address], bonusFxdxDistributor.address), "bonusFxdxTracker.initialize")
   await sendTxn(bonusFxdxDistributor.updateLastDistributionTime(), "bonusFxdxDistributor.updateLastDistributionTime")
+
+  // const bonusFxdxTracker = await contractAt("RewardTracker", addresses.bonusFxdxTracker)
+  // const bonusFxdxDistributor = await contractAt("BonusDistributor", addresses.bonusFxdxDistributor)
 
   const feeFxdxTracker = await deployContract("RewardTracker", ["Staked + Bonus + Fee FXDX", "sbfFXDX"])
   const feeFxdxDistributor = await deployContract("RewardDistributor", [nativeToken.address, feeFxdxTracker.address])
   await sendTxn(feeFxdxTracker.initialize([bonusFxdxTracker.address, bnFxdx.address], feeFxdxDistributor.address), "feeFxdxTracker.initialize")
   await sendTxn(feeFxdxDistributor.updateLastDistributionTime(), "feeFxdxDistributor.updateLastDistributionTime")
 
+  // const feeFxdxTracker = await contractAt("RewardTracker", addresses.feeFxdxTracker)
+  // const feeFxdxDistributor = await contractAt("RewardDistributor", addresses.feeFxdxDistributor)
+
   const feeFlpTracker = await deployContract("RewardTracker", ["Fee FLP", "fFLP"])
   const feeFlpDistributor = await deployContract("RewardDistributor", [nativeToken.address, feeFlpTracker.address])
   await sendTxn(feeFlpTracker.initialize([flp.address], feeFlpDistributor.address), "feeFlpTracker.initialize")
   await sendTxn(feeFlpDistributor.updateLastDistributionTime(), "feeFlpDistributor.updateLastDistributionTime")
 
+  // const feeFlpTracker = await contractAt("RewardTracker", addresses.feeFlpTracker)
+  // const feeFlpDistributor = await contractAt("RewardDistributor", addresses.feeFlpDistributor)
+
   const stakedFlpTracker = await deployContract("RewardTracker", ["Fee + Staked FLP", "fsFLP"])
   const stakedFlpDistributor = await deployContract("RewardDistributor", [esFxdx.address, stakedFlpTracker.address])
   await sendTxn(stakedFlpTracker.initialize([feeFlpTracker.address], stakedFlpDistributor.address), "stakedFlpTracker.initialize")
   await sendTxn(stakedFlpDistributor.updateLastDistributionTime(), "stakedFlpDistributor.updateLastDistributionTime")
+
+  // const stakedFlpTracker = await contractAt("RewardTracker", addresses.stakedFlpTracker)
+  // const stakedFlpDistributor = await contractAt("RewardDistributor", addresses.stakedFlpDistributor)
 
   await sendTxn(stakedFxdxTracker.setInPrivateTransferMode(true), "stakedFxdxTracker.setInPrivateTransferMode")
   await sendTxn(stakedFxdxTracker.setInPrivateStakingMode(true), "stakedFxdxTracker.setInPrivateStakingMode")
@@ -76,6 +94,9 @@ async function main() {
     stakedFlpTracker.address, // _rewardTracker
   ])
 
+  // const fxdxVester = await contractAt("Vester", addresses.fxdxVester)
+  // const flpVester = await contractAt("Vester", addresses.flpVester)
+
   const rewardRouter = await deployContract("RewardRouterV2", [])
   await sendTxn(rewardRouter.initialize(
     nativeToken.address,
@@ -93,7 +114,9 @@ async function main() {
     flpVester.address
   ), "rewardRouter.initialize")
 
-  await sendTxn(flpManager.setHandler(rewardRouter.address), "flpManager.setHandler(rewardRouter)")
+  // const rewardRouter = await contractAt("RewardRouterV2", addresses.rewardRouterV2)
+
+  await sendTxn(flpManager.setHandler(rewardRouter.address, true), "flpManager.setHandler(rewardRouter)")
 
   // allow rewardRouter to stake in stakedFxdxTracker
   await sendTxn(stakedFxdxTracker.setHandler(rewardRouter.address, true), "stakedFxdxTracker.setHandler(rewardRouter)")

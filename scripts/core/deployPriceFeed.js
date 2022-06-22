@@ -4,31 +4,36 @@ const { toUsd } = require("../../test/shared/units")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 // TODO: call setSpreadBasisPoints for tokens
 async function deployPriceFeedArb() {
   const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
   const tokenArr = [btc, eth, usdc, link, uni, usdt, mim, frax, dai]
   const fastPriceTokens = [btc, eth, link, uni]
+  // const { btc, eth, usdc, usdt } = tokens
+  // const tokenArr = [btc, eth, usdc, usdt]
+  // const fastPriceTokens = [btc, eth]
+
   if (fastPriceTokens.find(t => !t.fastPricePrecision)) {
     throw new Error("Invalid price precision")
   }
 
-  const signer = await getFrameSigner()
+  // const signer = await getFrameSigner()
 
-  const timelock = { address: "0x1e0FD2CC7329Ddf6bDA35f85579E1bC2996dB0d9" }
-  const fastPriceFeedGov = { address: "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b" }
+  const timelock = { address: addresses.timelock }
+  const fastPriceFeedGov = { address: addresses.admin }
 
-  const updater1 = { address: "0x1E359EaE31F5815AC3D5B337B26771Bc8ADbDFA3" }
-  const keeper1 = { address: "0xEF9092d35Fda3e5b6E2Dd3Fac5b580aefc346FAf" }
+  const updater1 = { address: addresses.priceSender }
+  const keeper1 = { address: addresses.positionsKeeper }
   const updaters = [updater1.address, keeper1.address]
 
-  const signers = ["0x8A78BA7F6c187e381ffE9B6414FC11cebd5993c1"]
-  const tokenManager = { address: "0x1EF8156b46e6f5A1973BfF4975177fd13275Ad59" }
+  const signers = [ addresses.signer1 ]
+  const tokenManager = { address: addresses.tokenManager }
 
-  const positionRouter = await contractAt("PositionRouter", "0x3D6bA331e3D9702C5e8A8d254e5d8a285F223aba")
+  const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
 
-  // const fastPriceEvents = await contractAt("FastPriceEvents", "0x4530b7DE1958270A2376be192a24175D795e1b07", signer)
+  // const fastPriceEvents = await contractAt("FastPriceEvents", addresses.fastPriceEvents, signer)
   const fastPriceEvents = await deployContract("FastPriceEvents", [])
 
   const chainlinkFlags = { address: "0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83" }
@@ -40,6 +45,7 @@ async function deployPriceFeedArb() {
     tokenManager.address, // _tokenManager
     positionRouter.address // _positionRouter
   ])
+  // const secondaryPriceFeed = await contractAt("FastPriceFeed", addresses.fastPriceFeed);
 
   await sendTxn(secondaryPriceFeed.initialize(1, signers, updaters), "secondaryPriceFeed.initialize")
   await sendTxn(secondaryPriceFeed.setMaxTimeDeviation(60 * 60), "secondaryPriceFeed.setMaxTimeDeviation")
@@ -48,7 +54,8 @@ async function deployPriceFeedArb() {
 
   await sendTxn(fastPriceEvents.setIsPriceFeed(secondaryPriceFeed.address, true), "fastPriceEvents.setIsPriceFeed")
 
-  const vaultPriceFeed = await deployContract("VaultPriceFeed", [])
+  // const vaultPriceFeed = await deployContract("VaultPriceFeed", [])
+  const vaultPriceFeed = await contractAt("VaultPriceFeed", addresses.vaultPriceFeed);
 
   await sendTxn(vaultPriceFeed.setMaxStrictPriceDeviation(expandDecimals(5, 28)), "vaultPriceFeed.setMaxStrictPriceDeviation") // 0.05 USD
   await sendTxn(vaultPriceFeed.setPriceSampleSpace(1), "vaultPriceFeed.setPriceSampleSpace")
@@ -81,7 +88,7 @@ async function deployPriceFeedAvax() {
   // const signer = await getFrameSigner()
 
   const timelock = { address: "0xfec6FA94aF7BF1Ec917550426F6785aeee898814" }
-  const fastPriceFeedGov = { address: "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b" }
+  const fastPriceFeedGov = { address: addresses.admin }
 
   const updater1 = { address: "0x89a072F18c7D0Bdf568e93553B715BBf5205690e" }
   const keeper1 = { address: "0x864dB9152169D68299b599331c6bFc77e3F91070" }

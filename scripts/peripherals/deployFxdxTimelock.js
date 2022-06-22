@@ -4,7 +4,7 @@ const { expandDecimals } = require("../../test/shared/utilities")
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 
 async function runForArbitrum() {
-  const admin = "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b"
+  const admin = addresses.admin
   const rewardManager = { address: ethers.constants.AddressZero }
   const buffer = 24 * 60 * 60
   const longBuffer = 7 * 24 * 60 * 60
@@ -24,7 +24,7 @@ async function runForArbitrum() {
 }
 
 async function runForAvax() {
-  const admin = "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b"
+  const admin = addresses.admin
   const rewardManager = { address: ethers.constants.AddressZero }
   const buffer = 24 * 60 * 60
   const longBuffer = 7 * 24 * 60 * 60

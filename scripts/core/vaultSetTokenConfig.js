@@ -4,14 +4,15 @@ const { toChainlinkPrice } = require("../../test/shared/chainlink")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 async function main() {
-  const signer = await getFrameSigner()
+  // const signer = await getFrameSigner()
 
-  const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
+  const vault = await contractAt("Vault", addresses.vault)
   const vaultGov = await vault.gov()
 
-  const vaultTimelock = await contractAt("Timelock", vaultGov, signer)
+  const vaultTimelock = await contractAt("Timelock", vaultGov/*, signer*/)
   const vaultMethod = "signalVaultSetTokenConfig"
   // const vaultMethod = "vaultSetTokenConfig"
 
@@ -19,8 +20,10 @@ async function main() {
   console.log("vaultTimelock", vaultTimelock.address)
   console.log("vaultMethod", vaultMethod)
 
-  const { link, uni } = tokens
-  const tokenArr = [link, uni]
+  // const { link, uni } = tokens
+  // const tokenArr = [link, uni]
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
 
   for (const token of tokenArr) {
     await sendTxn(vaultTimelock[vaultMethod](

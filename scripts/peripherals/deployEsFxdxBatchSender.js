@@ -1,11 +1,12 @@
 const { getFrameSigner, deployContract, contractAt, sendTxn } = require("../shared/helpers")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
+const addresses = require('../core/addresses')[network];
 
 async function getArbValues() {
   const signer = await getFrameSigner()
 
-  const esFxdx = await contractAt("EsFXDX", "0xf42Ae1D54fd613C9bb14810b0588FaAa09a426cA")
+  const esFxdx = await contractAt("EsFXDX", addresses.esFxdx)
   const esFxdxGov = await contractAt("Timelock", await esFxdx.gov(), signer)
   const fxdxVester = await contractAt("Vester", "0x199070DDfd1CFb69173aa2F7e20906F26B363004")
   const fxdxVesterGov = await contractAt("Timelock", await fxdxVester.gov(), signer)

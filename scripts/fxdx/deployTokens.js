@@ -1,9 +1,9 @@
 const { deployContract, contractAt, writeTmpAddresses } = require("../shared/helpers")
 
 async function main() {
-  // await deployContract("EsFXDX", [])
+  await deployContract("EsFXDX", [])
   // await deployContract("FLP", [])
-  await deployContract("MintableBaseToken", ["esFXDX IOU", "esFXDX:IOU", 0])
+  // await deployContract("MintableBaseToken", ["esFXDX IOU", "esFXDX:IOU", 0])
 }
 
 main()

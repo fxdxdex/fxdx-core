@@ -41,7 +41,7 @@ async function withdrawFeesBsc() {
 async function withdrawFeesArb() {
   const signer = await getFrameSigner()
 
-  const receiver = { address: "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b" }
+  const receiver = { address: addresses.admin }
   const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
   const gov = await contractAt("Timelock", await vault.gov(), signer)
   const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
@@ -66,7 +66,7 @@ async function withdrawFeesArb() {
 async function withdrawFeesAvax() {
   const signer = await getFrameSigner()
 
-  const receiver = { address: "0x49B373D422BdA4C6BfCdd5eC1E48A9a26fdA2F8b" }
+  const receiver = { address: addresses.admin }
   const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
   const gov = await contractAt("Timelock", await vault.gov(), signer)
   const { avax, btc, eth, mim, usdce, usdc } = tokens

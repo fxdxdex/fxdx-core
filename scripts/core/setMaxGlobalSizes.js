@@ -4,37 +4,17 @@ const { toChainlinkPrice } = require("../../test/shared/chainlink")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
-
-async function getArbValues() {
-  const positionRouter = await contractAt("PositionRouter", "0x3D6bA331e3D9702C5e8A8d254e5d8a285F223aba")
-  const positionManager = await contractAt("PositionManager", "0x87a4088Bd721F83b6c2E5102e2FA47022Cb1c831")
-
-  const { btc, eth, link, uni } = tokens
-  const tokenArr = [link]
-
-  return { positionRouter, positionManager, tokenArr }
-}
-
-async function getAvaxValues() {
-  const positionRouter = await contractAt("PositionRouter", "0x195256074192170d1530527abC9943759c7167d8")
-  const positionManager = await contractAt("PositionManager", "0xF2ec2e52c3b5F8b8bd5A3f93945d05628A233216")
-
-  const { avax, eth, btc } = tokens
-  const tokenArr = [avax]
-
-  return { positionRouter, positionManager, tokenArr }
-}
+const addresses = require('./addresses')[network]
 
 async function getValues() {
-  if (network === "arbitrum") {
-    return getArbValues()
-  }
+  const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
+  const positionManager = await contractAt("PositionManager", addresses.positionManager)
 
-  if (network === "avax") {
-    return getAvaxValues()
-  }
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
+
+  return { positionRouter, positionManager, tokenArr }
 }
-
 
 async function main() {
   const { positionRouter, positionManager, tokenArr } = await getValues()

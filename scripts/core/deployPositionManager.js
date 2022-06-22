@@ -5,23 +5,24 @@ const { errors } = require("../../test/core/Vault/helpers")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 const depositFee = 30 // 0.3%
 
 // TODO: set referral storage
-async function getArbValues() {
+async function getValues() {
   // const signer = await getFrameSigner()
 
-  const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
+  const vault = await contractAt("Vault", addresses.vault)
   // const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  // const router = await contractAt("Router", "0xaBBc5F99639c9B6bCb58544ddf04EFA6802F4064", signer)
+  // const router = await contractAt("Router", addresses.router, signer)
   const timelock = await contractAt("Timelock", await vault.gov())
-  const router = await contractAt("Router", "0xaBBc5F99639c9B6bCb58544ddf04EFA6802F4064")
+  const router = await contractAt("Router", addresses.router)
   const weth = await contractAt("WETH", tokens.nativeToken.address)
-  const orderBook = await contractAt("OrderBook", "0x09f77E8A13De9a35a7231028187e9fD5DB8a2ACB")
+  const orderBook = await contractAt("OrderBook", addresses.orderBook)
 
-  const orderKeeper = { address: "0xd4266F8F82F7405429EE18559e548979D49160F3" }
-  const liquidator = { address: "0x44311c91008DDE73dE521cd25136fD37d616802c" }
+  const orderKeeper = { address: addresses.orderKeeper }
+  const liquidator = { address: addresses.liquidator }
 
   // const partnerContracts = [
   //   "0x9ba57a1D3f6C61Ff500f598F16b97007EB02E346", // Vovo ETH up vault
@@ -38,40 +39,10 @@ async function getArbValues() {
   // ]
 
   const partnerContracts = [
-    "0xC8d6d21995E00e17c5aaF07bBCde43f0ccd12725", // Jones ETH Hedging
-    "0xe36fA7dC99658C9B7E247471261b65A88077D349", // Jones gOHM Hedging
-    "0xB9bd050747357ce1fF4eFD314012ca94C07543E6", // Jones DPX Hedging
-    "0xe98f68F3380c990D3045B4ae29f3BCa0F3D02939", // Jones rDPX Hedging
+
   ]
 
   return { vault, timelock, router, weth, depositFee, orderBook, orderKeeper, liquidator, partnerContracts }
-}
-
-async function getAvaxValues() {
-  const signer = await getFrameSigner()
-
-  const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
-  const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  const router = await contractAt("Router", "0x5F719c2F1095F7B9fc68a68e35B51194f4b6abe8", signer)
-  const weth = await contractAt("WETH", tokens.nativeToken.address)
-  const orderBook = await contractAt("OrderBook", "0x4296e307f108B2f583FF2F7B7270ee7831574Ae5")
-
-  const orderKeeper = { address: "0x06f34388A7CFDcC68aC9167C5f1C23DD39783179" }
-  const liquidator = { address: "0x7858A4C42C619a68df6E95DF7235a9Ec6F0308b9" }
-
-  const partnerContracts = []
-
-  return { vault, timelock, router, weth, depositFee, orderBook, orderKeeper, liquidator, partnerContracts }
-}
-
-async function getValues() {
-  if (network === "arbitrum") {
-    return getArbValues()
-  }
-
-  if (network === "avax") {
-    return getAvaxValues()
-  }
 }
 
 async function main() {
@@ -81,8 +52,8 @@ async function main() {
   const positionManager = await contractAt("PositionManager", "0x87a4088Bd721F83b6c2E5102e2FA47022Cb1c831")
   // await sendTxn(positionManager.setOrderKeeper(orderKeeper.address, true), "positionManager.setOrderKeeper(orderKeeper)")
   // await sendTxn(positionManager.setLiquidator(liquidator.address, true), "positionManager.setLiquidator(liquidator)")
-  // await sendTxn(timelock.setContractHandler(positionManager.address, true), "timelock.setContractHandler(positionRouter)")
-  // await sendTxn(timelock.setLiquidator(vault.address, positionManager.address, true), "timelock.setLiquidator(vault, positionManager, true)")
+  await sendTxn(timelock.setContractHandler(positionManager.address, true), "timelock.setContractHandler(positionRouter)")
+  await sendTxn(timelock.setLiquidator(vault.address, positionManager.address, true), "timelock.setLiquidator(vault, positionManager, true)")
   // await sendTxn(router.addPlugin(positionManager.address), "router.addPlugin(positionManager)")
 
   for (let i = 0; i < partnerContracts.length; i++) {

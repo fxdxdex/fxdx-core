@@ -15,19 +15,19 @@ function getArbValues() {
 
   const transfers = [
     {
-      address: "0x1E359EaE31F5815AC3D5B337B26771Bc8ADbDFA3", // price sender
+      address: addresses.priceSender, // price sender
       amount: "1.7"
     },
     {
-      address: "0xEF9092d35Fda3e5b6E2Dd3Fac5b580aefc346FAf", // positions keeper
+      address: addresses.positionsKeeper, // positions keeper
       amount: "2"
     },
     {
-      address: "0xd4266F8F82F7405429EE18559e548979D49160F3", // order keeper
+      address: addresses.orderKeeper, // order keeper
       amount: "0"
     },
     {
-      address: "0x44311c91008DDE73dE521cd25136fD37d616802c", // liquidator
+      address: addresses.liquidator, // liquidator
       amount: "0.1"
     }
   ]

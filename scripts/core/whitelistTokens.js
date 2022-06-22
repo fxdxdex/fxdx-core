@@ -4,10 +4,11 @@ const { toChainlinkPrice } = require("../../test/shared/chainlink")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 async function main() {
-  const vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
-  const vaultPriceFeed = await contractAt("VaultPriceFeed", "0x131238112aa25c0D8CD237a6c384d1A86D2BB152")
+  const vault = await contractAt("Vault", addresses.vault)
+  const vaultPriceFeed = await contractAt("VaultPriceFeed", addresses.vaultPriceFeed)
   console.log("vault", vault.address)
   console.log("vaultPriceFeed", vaultPriceFeed.address)
 

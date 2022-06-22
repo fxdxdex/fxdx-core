@@ -2,32 +2,15 @@ const { deployContract, contractAt, writeTmpAddresses } = require("../shared/hel
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 
-async function getArbValues() {
-  const flp = { address: "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258" }
-  const flpManager = { address: "0x321F653eED006AD1C29D174e17d96351BDe22649" }
-  const stakedFlpTracker = { address: "0x1aDDD80E6039594eE970E5872D247bf0414C8903" }
-  const feeFlpTracker = { address: "0x4e971a87900b931fF39d1Aad67697F49835400b6" }
-
-  return { flp, flpManager, stakedFlpTracker, feeFlpTracker }
-}
-
-async function getAvaxValues() {
-  const flp = { address: "0x01234181085565ed162a948b6a5e88758CD7c7b8" }
-  const flpManager = { address: "0xe1ae4d4b06A5Fe1fc288f6B4CD72f9F8323B107F" }
-  const stakedFlpTracker = { address: "0x9e295B5B976a184B14aD8cd72413aD846C299660" }
-  const feeFlpTracker = { address: "0xd2D1162512F927a7e282Ef43a362659E4F2a728F" }
-
-  return { flp, flpManager, stakedFlpTracker, feeFlpTracker }
-}
+const addresses = require('../core/addresses')[network]
 
 async function getValues() {
-  if (network === "arbitrum") {
-    return getArbValues()
-  }
+  const flp = { address: addresses.flp }
+  const flpManager = { address: addresses.flpManager }
+  const stakedFlpTracker = { address: addresses.stakedFlpTracker }
+  const feeFlpTracker = { address: addresses.feeFlpTracker }
 
-  if (network === "avax") {
-    return getAvaxValues()
-  }
+  return { flp, flpManager, stakedFlpTracker, feeFlpTracker }
 }
 
 async function main() {
@@ -40,7 +23,7 @@ async function main() {
     feeFlpTracker.address
   ])
 
-  // await deployContract("FlpBalance", [flpManager.address, stakedFlpTracker.address])
+  await deployContract("FlpBalance", [flpManager.address, stakedFlpTracker.address])
 }
 
 main()

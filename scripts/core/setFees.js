@@ -4,19 +4,14 @@ const { toUsd } = require("../../test/shared/units")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
+const addresses = require('./addresses')[network];
 
 async function main() {
-  const signer = await getFrameSigner()
+  // const signer = await getFrameSigner()
 
-  let vault
-  if (network === "avax") {
-    vault = await contractAt("Vault", "0x9ab2De34A33fB459b538c43f251eB825645e8595")
-  }
-  if (network === "arbitrum") {
-    vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
-  }
+  const vault = await contractAt("Vault", addresses.vault);
 
-  const timelock = await contractAt("Timelock", await vault.gov(), signer)
+  const timelock = await contractAt("Timelock", await vault.gov())
   console.log("timelock", timelock.address)
 
   await sendTxn(timelock.setFees(
