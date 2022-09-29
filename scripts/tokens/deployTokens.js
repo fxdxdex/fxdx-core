@@ -6,6 +6,7 @@ async function main() {
   addresses.BTC = (await callWithRetries(deployContract, ["FaucetToken", ["Bitcoin", "BTC", 18, expandDecimals(1000, 18)]])).address
   addresses.USDC = (await callWithRetries(deployContract, ["FaucetToken", ["USDC Coin", "USDC", 18, expandDecimals(1000, 18)]])).address
   addresses.USDT = (await callWithRetries(deployContract, ["FaucetToken", ["Tether", "USDT", 18, expandDecimals(1000, 18)]])).address
+  addresses.WETH = (await callWithRetries(deployContract, ["WETH", ["Wrapped Ether", "WETH", 18]])).address
 
   writeTmpAddresses(addresses)
 }
