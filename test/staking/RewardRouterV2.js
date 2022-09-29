@@ -15,7 +15,6 @@ describe("RewardRouterV2", function () {
   const vestingDuration = 365 * 24 * 60 * 60
 
   let timelock
-  let rewardManager
 
   let vault
   let flpManager
@@ -56,18 +55,6 @@ describe("RewardRouterV2", function () {
   let rewardRouter
 
   beforeEach(async () => {
-    rewardManager = await deployContract("RewardManager", [])
-    timelock = await deployContract("Timelock", [
-      wallet.address,
-      10,
-      rewardManager.address,
-      tokenManager.address,
-      tokenManager.address,
-      expandDecimals(1000000, 18),
-      10,
-      100
-    ])
-
     bnb = await deployContract("Token", [])
     bnbPriceFeed = await deployContract("PriceFeed", [])
 
@@ -91,6 +78,17 @@ describe("RewardRouterV2", function () {
 
     await initVault(vault, router, usdf, vaultPriceFeed)
     flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
+
+    timelock = await deployContract("Timelock", [
+      wallet.address,
+      10,
+      tokenManager.address,
+      tokenManager.address,
+      flpManager.address,
+      expandDecimals(1000000, 18),
+      10,
+      100
+    ])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
@@ -193,23 +191,6 @@ describe("RewardRouterV2", function () {
       flpVester.address
     )
 
-    await rewardManager.initialize(
-      timelock.address,
-      rewardRouter.address,
-      flpManager.address,
-      stakedFxdxTracker.address,
-      bonusFxdxTracker.address,
-      feeFxdxTracker.address,
-      feeFlpTracker.address,
-      stakedFlpTracker.address,
-      stakedFxdxDistributor.address,
-      stakedFlpDistributor.address,
-      esFxdx.address,
-      bnFxdx.address,
-      fxdxVester.address,
-      flpVester.address
-    )
-
     // allow bonusFxdxTracker to stake stakedFxdxTracker
     await stakedFxdxTracker.setHandler(bonusFxdxTracker.address, true)
     // allow bonusFxdxTracker to stake feeFxdxTracker
@@ -237,6 +218,32 @@ describe("RewardRouterV2", function () {
     await esFxdx.setHandler(tokenManager.address, true)
     await fxdxVester.setHandler(wallet.address, true)
 
+    await esFxdx.setHandler(rewardRouter.address, true)
+    await esFxdx.setHandler(stakedFxdxDistributor.address, true)
+    await esFxdx.setHandler(stakedFlpDistributor.address, true)
+    await esFxdx.setHandler(stakedFxdxTracker.address, true)
+    await esFxdx.setHandler(stakedFlpTracker.address, true)
+    await esFxdx.setHandler(fxdxVester.address, true)
+    await esFxdx.setHandler(flpVester.address, true)
+
+    await flpManager.setHandler(rewardRouter.address, true)
+    await stakedFxdxTracker.setHandler(rewardRouter.address, true)
+    await bonusFxdxTracker.setHandler(rewardRouter.address, true)
+    await feeFxdxTracker.setHandler(rewardRouter.address, true)
+    await feeFlpTracker.setHandler(rewardRouter.address, true)
+    await stakedFlpTracker.setHandler(rewardRouter.address, true)
+
+    await esFxdx.setHandler(rewardRouter.address, true)
+    await bnFxdx.setMinter(rewardRouter.address, true)
+    await esFxdx.setMinter(fxdxVester.address, true)
+    await esFxdx.setMinter(flpVester.address, true)
+
+    await fxdxVester.setHandler(rewardRouter.address, true)
+    await flpVester.setHandler(rewardRouter.address, true)
+
+    await feeFxdxTracker.setHandler(fxdxVester.address, true)
+    await stakedFlpTracker.setHandler(flpVester.address, true)
+
     await flpManager.setGov(timelock.address)
     await stakedFxdxTracker.setGov(timelock.address)
     await bonusFxdxTracker.setGov(timelock.address)
@@ -249,9 +256,6 @@ describe("RewardRouterV2", function () {
     await bnFxdx.setGov(timelock.address)
     await fxdxVester.setGov(timelock.address)
     await flpVester.setGov(timelock.address)
-
-    await rewardManager.updateEsFxdxHandlers()
-    await rewardManager.enableRewardRouter()
   })
 
   it("inits", async () => {
@@ -291,39 +295,6 @@ describe("RewardRouterV2", function () {
       fxdxVester.address,
       flpVester.address
     )).to.be.revertedWith("RewardRouter: already initialized")
-
-    expect(await rewardManager.timelock()).eq(timelock.address)
-    expect(await rewardManager.rewardRouter()).eq(rewardRouter.address)
-    expect(await rewardManager.flpManager()).eq(flpManager.address)
-    expect(await rewardManager.stakedFxdxTracker()).eq(stakedFxdxTracker.address)
-    expect(await rewardManager.bonusFxdxTracker()).eq(bonusFxdxTracker.address)
-    expect(await rewardManager.feeFxdxTracker()).eq(feeFxdxTracker.address)
-    expect(await rewardManager.feeFlpTracker()).eq(feeFlpTracker.address)
-    expect(await rewardManager.stakedFlpTracker()).eq(stakedFlpTracker.address)
-    expect(await rewardManager.stakedFxdxTracker()).eq(stakedFxdxTracker.address)
-    expect(await rewardManager.stakedFxdxDistributor()).eq(stakedFxdxDistributor.address)
-    expect(await rewardManager.stakedFlpDistributor()).eq(stakedFlpDistributor.address)
-    expect(await rewardManager.esFxdx()).eq(esFxdx.address)
-    expect(await rewardManager.bnFxdx()).eq(bnFxdx.address)
-    expect(await rewardManager.fxdxVester()).eq(fxdxVester.address)
-    expect(await rewardManager.flpVester()).eq(flpVester.address)
-
-    await expect(rewardManager.initialize(
-      timelock.address,
-      rewardRouter.address,
-      flpManager.address,
-      stakedFxdxTracker.address,
-      bonusFxdxTracker.address,
-      feeFxdxTracker.address,
-      feeFlpTracker.address,
-      stakedFlpTracker.address,
-      stakedFxdxDistributor.address,
-      stakedFlpDistributor.address,
-      esFxdx.address,
-      bnFxdx.address,
-      fxdxVester.address,
-      flpVester.address
-    )).to.be.revertedWith("RewardManager: already initialized")
   })
 
   it("stakeFxdxForAccount, stakeFxdx, stakeEsFxdx, unstakeFxdx, unstakeEsFxdx, claimEsFxdx, claimFees, compound, batchCompoundForAccounts", async () => {
@@ -1212,17 +1183,7 @@ describe("RewardRouterV2", function () {
   })
 
   it("handleRewards", async () => {
-    const rewardManagerV2 = await deployContract("RewardManager", [])
-    const timelockV2 = await deployContract("Timelock", [
-      wallet.address,
-      10,
-      rewardManagerV2.address,
-      tokenManager.address,
-      tokenManager.address,
-      expandDecimals(1000000, 18),
-      10,
-      100
-    ])
+    const timelockV2 = wallet
 
     // use new rewardRouter, use eth for weth
     const rewardRouterV2 = await deployContract("RewardRouterV2", [])
@@ -1238,23 +1199,6 @@ describe("RewardRouterV2", function () {
       feeFlpTracker.address,
       stakedFlpTracker.address,
       flpManager.address,
-      fxdxVester.address,
-      flpVester.address
-    )
-
-    await rewardManagerV2.initialize(
-      timelockV2.address,
-      rewardRouterV2.address,
-      flpManager.address,
-      stakedFxdxTracker.address,
-      bonusFxdxTracker.address,
-      feeFxdxTracker.address,
-      feeFlpTracker.address,
-      stakedFlpTracker.address,
-      stakedFxdxDistributor.address,
-      stakedFlpDistributor.address,
-      esFxdx.address,
-      bnFxdx.address,
       fxdxVester.address,
       flpVester.address
     )
@@ -1288,8 +1232,31 @@ describe("RewardRouterV2", function () {
     await timelock.setGov(fxdxVester.address, timelockV2.address)
     await timelock.setGov(flpVester.address, timelockV2.address)
 
-    await rewardManagerV2.updateEsFxdxHandlers()
-    await rewardManagerV2.enableRewardRouter()
+    await esFxdx.setHandler(rewardRouterV2.address, true)
+    await esFxdx.setHandler(stakedFxdxDistributor.address, true)
+    await esFxdx.setHandler(stakedFlpDistributor.address, true)
+    await esFxdx.setHandler(stakedFxdxTracker.address, true)
+    await esFxdx.setHandler(stakedFlpTracker.address, true)
+    await esFxdx.setHandler(fxdxVester.address, true)
+    await esFxdx.setHandler(flpVester.address, true)
+
+    await flpManager.setHandler(rewardRouterV2.address, true)
+    await stakedFxdxTracker.setHandler(rewardRouterV2.address, true)
+    await bonusFxdxTracker.setHandler(rewardRouterV2.address, true)
+    await feeFxdxTracker.setHandler(rewardRouterV2.address, true)
+    await feeFlpTracker.setHandler(rewardRouterV2.address, true)
+    await stakedFlpTracker.setHandler(rewardRouterV2.address, true)
+
+    await esFxdx.setHandler(rewardRouterV2.address, true)
+    await bnFxdx.setMinter(rewardRouterV2.address, true)
+    await esFxdx.setMinter(fxdxVester.address, true)
+    await esFxdx.setMinter(flpVester.address, true)
+
+    await fxdxVester.setHandler(rewardRouterV2.address, true)
+    await flpVester.setHandler(rewardRouterV2.address, true)
+
+    await feeFxdxTracker.setHandler(fxdxVester.address, true)
+    await stakedFlpTracker.setHandler(flpVester.address, true)
 
     await eth.deposit({ value: expandDecimals(10, 18) })
 

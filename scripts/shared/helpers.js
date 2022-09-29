@@ -4,6 +4,32 @@ const parse = require('csv-parse')
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 
+const ARBITRUM = 42161
+const AVALANCHE = 43114
+const GOERLI = 5
+
+const {
+  ARBITRUM_URL,
+  AVAX_URL,
+  ARBITRUM_DEPLOY_KEY,
+  AVAX_DEPLOY_KEY,
+  GOERLI_URL,
+  GOERLI_DEPLOY_KEY
+} = require("../../env.json");
+const { ethers } = require('hardhat');
+
+const providers = {
+  arbitrum: new ethers.providers.JsonRpcProvider(ARBITRUM_URL),
+  avax: new ethers.providers.JsonRpcProvider(AVAX_URL),
+  goerli: new ethers.providers.JsonRpcProvider(GOERLI_URL)
+}
+
+const signers = {
+  arbitrum: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.arbitrum),
+  avax: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.avax),
+  goerli: new ethers.Wallet(GOERLI_DEPLOY_KEY).connect(providers.goerli)
+}
+
 const readCsv = async (file) => {
   records = []
   const parser = fs
@@ -25,6 +51,10 @@ function getChainId(network) {
 
   if (network === "avax") {
     return 43114
+  }
+
+  if (network === "goerli") {
+    return 5
   }
 
   throw new Error("Unsupported network")
@@ -136,6 +166,11 @@ async function processBatch(batchLists, batchSize, handler) {
 }
 
 module.exports = {
+  ARBITRUM,
+  AVALANCHE,
+  GOERLI,
+  providers,
+  signers,
   readCsv,
   getFrameSigner,
   sendTxn,

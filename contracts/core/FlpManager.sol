@@ -22,7 +22,7 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
     uint256 public constant MAX_COOLDOWN_DURATION = 48 hours;
 
     IVault public vault;
-    address public usdf;
+    address public override usdf;
     address public flp;
 
     uint256 public override cooldownDuration;
@@ -107,7 +107,7 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
         return amounts;
     }
 
-    function getAumInUsdf(bool maximise) public view returns (uint256) {
+    function getAumInUsdf(bool maximise) public override view returns (uint256) {
         uint256 aum = getAum(maximise);
         return aum.mul(10 ** USDF_DECIMALS).div(PRICE_PRECISION);
     }

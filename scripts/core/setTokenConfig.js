@@ -69,6 +69,11 @@ async function main() {
     const usdfAmount = token.managedUsd.div(expandDecimals(1, 30 - 18))
     totalUsdfAmount = totalUsdfAmount.add(usdfAmount)
 
+    const adjustedMaxUsdfAmount = expandDecimals(tokenItem.maxUsdfAmount, 18)
+    // if (usdfAmount.gt(adjustedMaxUsdfAmount)) {
+    //   usdfAmount = adjustedMaxUsdfAmount
+    // }
+
     if (shouldSendTxn) {
       await sendTxn(timelock.setTokenConfig(
         vault.address,

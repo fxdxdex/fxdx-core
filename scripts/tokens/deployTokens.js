@@ -1,4 +1,4 @@
-const { deployContract, sendTxn, writeTmpAddresses, callWithRetries } = require("../shared/helpers")
+const { deployContract, writeTmpAddresses, callWithRetries } = require("../shared/helpers")
 const { expandDecimals } = require("../../test/shared/utilities")
 
 async function main() {

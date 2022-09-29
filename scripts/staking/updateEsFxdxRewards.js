@@ -1,24 +1,40 @@
-const { deployContract, contractAt, sendTxn } = require("../shared/helpers")
-const { expandDecimals } = require("../../test/shared/utilities")
+const { deployContract, contractAt, sendTxn, signers } = require("../shared/helpers")
+const { expandDecimals, bigNumberify } = require("../../test/shared/utilities")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 
 const shouldSendTxn = true
 
-async function getArbValues(signer) {
+const monthlyEsFxdxForFlpOnArb = expandDecimals(toInt("0"), 18)
+const monthlyEsFxdxForFlpOnAvax = expandDecimals(toInt("0"), 18)
+
+async function getStakedAmounts() {
+  const arbStakedFxdxTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4", signers.arbitrum)
+  const arbStakedFxdxAndEsFxdx =await arbStakedFxdxTracker.totalSupply()
+
+  const avaxStakedFxdxTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4", signers.avax)
+  const avaxStakedFxdxAndEsFxdx =await avaxStakedFxdxTracker.totalSupply()
+
+  return {
+    arbStakedFxdxAndEsFxdx,
+    avaxStakedFxdxAndEsFxdx
+  }
+}
+
+async function getArbValues() {
   const fxdxRewardTracker = await contractAt("RewardTracker", "0x908C4D94D34924765f1eDc22A1DD098397c59dD4")
   const flpRewardTracker = await contractAt("RewardTracker", "0x1aDDD80E6039594eE970E5872D247bf0414C8903")
   const tokenDecimals = 18
-  const monthlyEsFxdxForFlp = expandDecimals(50 * 1000, 18)
+  const monthlyEsFxdxForFlp = monthlyEsFxdxForFlpOnArb
 
   return { tokenDecimals, fxdxRewardTracker, flpRewardTracker, monthlyEsFxdxForFlp }
 }
 
-async function getAvaxValues(signer) {
+async function getAvaxValues() {
   const fxdxRewardTracker = await contractAt("RewardTracker", "0x2bD10f8E93B3669b6d42E74eEedC65dd1B0a1342")
   const flpRewardTracker = await contractAt("RewardTracker", "0x9e295B5B976a184B14aD8cd72413aD846C299660")
   const tokenDecimals = 18
-  const monthlyEsFxdxForFlp = expandDecimals(0, 18)
+  const monthlyEsFxdxForFlp = monthlyEsFxdxForFlpOnAvax
 
   return { tokenDecimals, fxdxRewardTracker, flpRewardTracker, monthlyEsFxdxForFlp }
 }
@@ -38,26 +54,25 @@ function toInt(value) {
 }
 
 async function main() {
+  const { arbStakedFxdxAndEsFxdx, avaxStakedFxdxAndEsFxdx } = await getStakedAmounts()
   const { tokenDecimals, fxdxRewardTracker, flpRewardTracker, monthlyEsFxdxForFlp } = await getValues()
 
   const stakedAmounts = {
     arbitrum: {
-      fxdx: toInt("6,147,470"),
-      esFxdx: toInt("1,277,087")
+      total: arbStakedFxdxAndEsFxdx
     },
     avax: {
-      fxdx: toInt("417,802"),
-      esFxdx: toInt("195,478")
+      total: avaxStakedFxdxAndEsFxdx
     }
   }
 
-  let totalStaked = 0
+  let totalStaked = bigNumberify(0)
+
   for (const net in stakedAmounts) {
-    stakedAmounts[net].total = stakedAmounts[net].fxdx + stakedAmounts[net].esFxdx
-    totalStaked += stakedAmounts[net].total
+    totalStaked = totalStaked.add(stakedAmounts[net].total)
   }
 
-  const totalEsFxdxRewards = expandDecimals(100000, tokenDecimals)
+  const totalEsFxdxRewards = expandDecimals(50000, tokenDecimals)
   const secondsPerMonth = 28 * 24 * 60 * 60
 
   const fxdxRewardDistributor = await contractAt("RewardDistributor", await fxdxRewardTracker.distributor())
@@ -78,8 +93,8 @@ async function main() {
   console.log("flpNextTokensPerInterval", flpNextTokensPerInterval.toString())
 
   if (shouldSendTxn) {
-    await sendTxn(fxdxRewardDistributor.setTokensPerInterval(fxdxNextTokensPerInterval), "fxdxRewardDistributor.setTokensPerInterval")
-    await sendTxn(flpRewardDistributor.setTokensPerInterval(flpNextTokensPerInterval), "flpRewardDistributor.setTokensPerInterval")
+    await sendTxn(fxdxRewardDistributor.setTokensPerInterval(fxdxNextTokensPerInterval, { gasLimit: 500000 }), "fxdxRewardDistributor.setTokensPerInterval")
+    await sendTxn(flpRewardDistributor.setTokensPerInterval(flpNextTokensPerInterval, { gasLimit: 500000 }), "flpRewardDistributor.setTokensPerInterval")
   }
 }
 

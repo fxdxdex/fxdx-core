@@ -2,7 +2,6 @@ require("@nomiclabs/hardhat-waffle")
 require("@nomiclabs/hardhat-etherscan")
 require("hardhat-contract-sizer")
 require('@typechain/hardhat')
-require('hardhat-abi-exporter')
 
 const {
   BSC_URL,
@@ -11,6 +10,7 @@ const {
   POLYGONSCAN_API_KEY,
   SNOWTRACE_API_KEY,
   ARBISCAN_API_KEY,
+  ARBISCAN_TESTNET_API_KEY,
   ETHERSCAN_API_KEY,
   BSC_TESTNET_URL,
   BSC_TESTNET_DEPLOY_KEY,
@@ -23,7 +23,9 @@ const {
   POLYGON_DEPLOY_KEY,
   POLYGON_URL,
   MAINNET_URL,
-  MAINNET_DEPLOY_KEY
+  MAINNET_DEPLOY_KEY,
+  GOERLI_URL,
+  GOERLI_DEPLOY_KEY
 } = require("./env.json")
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -88,10 +90,16 @@ module.exports = {
     //   gasPrice: 50000000000,
     //   accounts: [MAINNET_DEPLOY_KEY]
     // }
+    goerli: {
+      url: GOERLI_URL,
+      gasPrice: 50000000000,
+      chainId: 5,
+      accounts: [GOERLI_DEPLOY_KEY]
+    }
   },
   etherscan: {
     apiKey: {
-      // mainnet: MAINNET_DEPLOY_KEY,
+      mainnet: ETHERSCAN_API_KEY,
       arbitrumOne: ARBISCAN_API_KEY,
       // avalanche: SNOWTRACE_API_KEY,
       // bsc: BSCSCAN_API_KEY,
@@ -111,13 +119,4 @@ module.exports = {
     outDir: "typechain",
     target: "ethers-v5",
   },
-
-  abiExporter: {
-    path: './data/abi',
-    runOnCompile: true,
-    clear: true,
-    flat: true,
-    spacing: 2,
-    pretty: true,
-  }
 }

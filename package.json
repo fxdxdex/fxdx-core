@@ -1,8 +1,10 @@
 {
-  "name": "gambit-contracts",
+  "name": "fxdx-contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "files": [
+    "contracts/**/*.sol"
+  ],
   "scripts": {
     "test": "npx hardhat test",
     "compile": "hardhat compile",
@@ -30,7 +32,6 @@
     "@uniswap/v3-sdk": "^3.8.2",
     "bn.js": "^5.2.0",
     "csv-parse": "^4.16.3",
-    "hardhat-abi-exporter": "^2.9.0",
     "node-fetch": "^2.6.7"
   }
 }

@@ -72,5 +72,8 @@ module.exports = {
   },
   avax: {
 
+  },
+  goerli: {
+
   }
 }

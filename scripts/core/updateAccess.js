@@ -97,7 +97,7 @@ async function main() {
   await updateRewardTrackerGov(bonusFxdxTracker, "bonusFxdxTracker")
   await updateRewardTrackerGov(feeFxdxTracker, "feeFxdxTracker")
   await updateRewardTrackerGov(stakedFlpTracker, "stakedFlpTracker")
-  await updateRewardTrackerGov(feeFlpTracker, "feeGlpTracker")
+  await updateRewardTrackerGov(feeFlpTracker, "feeFlpTracker")
 
   await updateGov(flp, "flp")
   await updateGov(usdf, "usdf")
