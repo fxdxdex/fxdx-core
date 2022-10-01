@@ -1,9 +1,7 @@
-const { getFrameSigner, deployContract, contractAt , sendTxn, writeTmpAddresses, callWithRetries } = require("../shared/helpers")
-const { expandDecimals } = require("../../test/shared/utilities")
+const { getFrameSigner, contractAt , sendTxn } = require("../shared/helpers")
 const { toUsd } = require("../../test/shared/units")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
-const tokens = require('./tokens')[network];
 const addresses = require('./addresses')[network];
 
 async function main() {

@@ -1,4 +1,4 @@
-const { deployContract, contractAt, writeTmpAddresses } = require("../shared/helpers")
+const { deployContract, writeTmpAddresses } = require("../shared/helpers")
 
 async function main() {
   const contract = await deployContract("VaultReader", [], "VaultReader")

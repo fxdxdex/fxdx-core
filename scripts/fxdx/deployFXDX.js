@@ -1,4 +1,4 @@
-const { deployContract, contractAt, writeTmpAddresses } = require("../shared/helpers")
+const { deployContract } = require("../shared/helpers")
 
 async function main() {
   await deployContract("FXDX", [])

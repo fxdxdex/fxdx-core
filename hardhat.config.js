@@ -92,7 +92,7 @@ module.exports = {
     // }
     goerli: {
       url: GOERLI_URL,
-      gasPrice: 50000000000,
+      // gasPrice: 10000000000,
       chainId: 5,
       accounts: [GOERLI_DEPLOY_KEY]
     }

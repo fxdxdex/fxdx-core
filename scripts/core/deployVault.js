@@ -10,23 +10,21 @@ async function main() {
   const { nativeToken } = tokens
 
   const vault = await deployContract("Vault", [])
-  // const vault = await contractAt("Vault", "0x489ee077994B6658eAfA855C308275EAd8097C4A")
+  // const vault = await contractAt("Vault", addresses.vault)
   const usdf = await deployContract("USDF", [vault.address])
-  // const usdf = await contractAt("USDF", "0x45096e7aA921f27590f8F19e457794EB09678141")
+  // const usdf = await contractAt("USDF", addresses.usdf)
   const router = await deployContract("Router", [vault.address, usdf.address, nativeToken.address])
   // const router = await contractAt("Router", "0xaBBc5F99639c9B6bCb58544ddf04EFA6802F4064")
-  // const vaultPriceFeed = await contractAt("VaultPriceFeed", "0x30333ce00ac3025276927672aaefd80f22e89e54")
-  // const secondaryPriceFeed = await deployContract("FastPriceFeed", [5 * 60])
-
   const vaultPriceFeed = await deployContract("VaultPriceFeed", [])
+  // const vaultPriceFeed = await contractAt("VaultPriceFeed", addresses.vaultPriceFeed)
 
   await sendTxn(vaultPriceFeed.setMaxStrictPriceDeviation(expandDecimals(1, 28)), "vaultPriceFeed.setMaxStrictPriceDeviation") // 0.05 USD
   await sendTxn(vaultPriceFeed.setPriceSampleSpace(1), "vaultPriceFeed.setPriceSampleSpace")
   await sendTxn(vaultPriceFeed.setIsAmmEnabled(false), "vaultPriceFeed.setIsAmmEnabled")
 
   const flp = await deployContract("FLP", [])
+  // const flp = await contractAt("FLP", addresses.flp)
   await sendTxn(flp.setInPrivateTransferMode(true), "flp.setInPrivateTransferMode")
-  // const flp = await contractAt("FLP", "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258")
   const flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 15 * 60])
   await sendTxn(flpManager.setInPrivateMode(true), "flpManager.setInPrivateMode")
 

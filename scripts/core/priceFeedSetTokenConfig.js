@@ -1,6 +1,4 @@
-const { getFrameSigner, deployContract, contractAt, sendTxn, readTmpAddresses, callWithRetries } = require("../shared/helpers")
-const { expandDecimals } = require("../../test/shared/utilities")
-const { toChainlinkPrice } = require("../../test/shared/chainlink")
+const { getFrameSigner, contractAt, sendTxn } = require("../shared/helpers")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
@@ -14,10 +12,10 @@ async function main() {
   const priceFeed = await contractAt("VaultPriceFeed", await vault.priceFeed())
   const priceFeedGov = await priceFeed.gov()
   // const priceFeedTimelock = await contractAt("Timelock", priceFeedGov, signer)
-  const priceFeedTimelock = await contractAt("Timelock", priceFeedGov)
+  const priceFeedTimelock = await contractAt("PriceFeedTimelock", priceFeedGov)
 
-  // const priceFeedMethod = "signalPriceFeedSetTokenConfig"
-  const priceFeedMethod = "priceFeedSetTokenConfig"
+  const priceFeedMethod = "signalPriceFeedSetTokenConfig"
+  // const priceFeedMethod = "priceFeedSetTokenConfig"
 
   console.log("vault", vault.address)
   console.log("priceFeed", priceFeed.address)

@@ -1,6 +1,4 @@
-const { deployContract, contractAt, writeTmpAddresses, sendTxn } = require("../shared/helpers")
-
-const network = (process.env.HARDHAT_NETWORK || 'mainnet');
+const { deployContract } = require("../shared/helpers")
 
 async function main() {
   await deployContract("ReferralReader", [], "ReferralReader")

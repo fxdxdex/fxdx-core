@@ -1,4 +1,4 @@
-const { deployContract, contractAt , sendTxn, writeTmpAddresses } = require("../shared/helpers")
+const { deployContract, sendTxn } = require("../shared/helpers")
 const { expandDecimals } = require("../../test/shared/utilities")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
@@ -19,10 +19,6 @@ async function main() {
     "10000000000000000", // 0.01 AVAX
     expandDecimals(10, 30) // min purchase token amount usd
   ), "orderBook.initialize");
-
-  writeTmpAddresses({
-    orderBook: orderBook.address
-  })
 }
 
 main()
