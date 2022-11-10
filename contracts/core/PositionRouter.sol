@@ -399,17 +399,17 @@ contract PositionRouter is BasePositionManager, IPositionRouter {
 
         delete increasePositionRequests[_key];
 
-       if (request.amountIn > 0) {
-           uint256 amountIn = request.amountIn;
+        if (request.amountIn > 0) {
+            uint256 amountIn = request.amountIn;
 
-           if (request.path.length > 1) {
-               IERC20(request.path[0]).safeTransfer(vault, request.amountIn);
-               amountIn = _swap(request.path, request.minOut, address(this));
-           }
+            if (request.path.length > 1) {
+                IERC20(request.path[0]).safeTransfer(vault, request.amountIn);
+                amountIn = _swap(request.path, request.minOut, address(this));
+            }
 
-           uint256 afterFeeAmount = _collectFees(msg.sender, request.path, amountIn, request.indexToken, request.isLong, request.sizeDelta);
-           IERC20(request.path[request.path.length - 1]).safeTransfer(vault, afterFeeAmount);
-       }
+            uint256 afterFeeAmount = _collectFees(msg.sender, request.path, amountIn, request.indexToken, request.isLong, request.sizeDelta);
+            IERC20(request.path[request.path.length - 1]).safeTransfer(vault, afterFeeAmount);
+        }
 
        _increasePosition(request.account, request.path[request.path.length - 1], request.indexToken, request.sizeDelta, request.isLong, request.acceptablePrice);
 
