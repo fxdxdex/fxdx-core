@@ -2,7 +2,6 @@ const { deployContract } = require("../shared/helpers")
 
 async function main() {
   await deployContract("EsFXDX", [])
-  // await deployContract("FLP", [])
   // await deployContract("MintableBaseToken", ["esFXDX IOU", "esFXDX:IOU", 0])
 }
 
