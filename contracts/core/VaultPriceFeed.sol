@@ -44,7 +44,7 @@ contract VaultPriceFeed is IVaultPriceFeed {
 
     mapping (address => address) public priceFeeds;
     mapping (address => uint256) public priceDecimals;
-    mapping (address => uint256) public spreadBasisPoints;
+    mapping (address => uint256) public override spreadBasisPoints;
     // Chainlink can return prices for stablecoins
     // that differs from 1 USD by a larger percentage than stableSwapFeeBasisPoints
     // we use strictStableTokens to cap the price to 1 USD

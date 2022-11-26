@@ -19,6 +19,8 @@ describe("PositionRouter", function () {
   let usdf
   let router
   let positionRouter
+  let swapRouter
+  let liquidityRouter
   let referralStorage
   let vaultPriceFeed
   let bnb
@@ -104,6 +106,10 @@ describe("PositionRouter", function () {
     await vault.setIsLeverageEnabled(false)
     await vault.setGov(timelock.address)
 
+    const rewardRouter = await deployContract("RewardRouterV2", [])
+    swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
+    liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
+
     fastPriceEvents = await deployContract("FastPriceEvents", [])
     fastPriceFeed = await deployContract("FastPriceFeed", [
       5 * 60, // _priceDuration
@@ -112,7 +118,9 @@ describe("PositionRouter", function () {
       250, // _maxDeviationBasisPoints
       fastPriceEvents.address, // _fastPriceEvents
       tokenManager.address, // _tokenManager
-      positionRouter.address // _positionRouter
+      positionRouter.address, // _positionRouter
+      swapRouter.address,
+      liquidityRouter.address
     ])
     await fastPriceFeed.initialize(2, [signer0.address, signer1.address], [updater0.address, updater1.address])
     await fastPriceEvents.setIsPriceFeed(fastPriceFeed.address, true)
@@ -2308,6 +2316,8 @@ describe("PositionRouter", function () {
 
     await fastPriceFeed.setMaxTimeDeviation(1000)
     await positionRouter.setPositionKeeper(fastPriceFeed.address, true)
+    await swapRouter.setRequestKeeper(fastPriceFeed.address, true)
+    await liquidityRouter.setRequestKeeper(fastPriceFeed.address, true)
 
     const blockTime = await getBlockTime(provider)
 
@@ -2316,8 +2326,9 @@ describe("PositionRouter", function () {
       blockTime, // _timestamp
       9, // _endIndexForIncreasePositions
       10, // _endIndexForDecreasePositions
-      1, // _maxIncreasePositions
-      2 // _maxDecreasePositions
+      0, // _endIndexForSwaps
+      0, // _endIndexForAddLiquidities
+      0 // _endIndexForRemoeLiquidities
     )).to.be.revertedWith("FastPriceFeed: forbidden")
 
     await fastPriceFeed.connect(updater0).setPricesWithBitsAndExecute(
@@ -2325,14 +2336,15 @@ describe("PositionRouter", function () {
       blockTime, // _timestamp
       9, // _endIndexForIncreasePositions
       10, // _endIndexForDecreasePositions
-      1, // _maxIncreasePositions
-      2 // _maxDecreasePositions
+      0, // _endIndexForSwaps
+      0, // _endIndexForAddLiquidities
+      0 // _endIndexForRemoeLiquidities
     )
 
     queueLengths = await positionRouter.getRequestQueueLengths()
-    expect(queueLengths[0]).eq(8) // increasePositionRequestKeysStart
+    expect(queueLengths[0]).eq(9) // increasePositionRequestKeysStart
     expect(queueLengths[1]).eq(10) // increasePositionRequestKeys.length
-    expect(queueLengths[2]).eq(9) // decreasePositionRequestKeysStart
+    expect(queueLengths[2]).eq(10) // decreasePositionRequestKeysStart
     expect(queueLengths[3]).eq(12) // decreasePositionRequestKeys.length
   })
 })

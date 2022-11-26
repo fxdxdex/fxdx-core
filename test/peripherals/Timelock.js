@@ -12,7 +12,7 @@ const { AddressZero } = ethers.constants
 
 describe("Timelock", function () {
   const provider = waffle.provider
-  const [wallet, user0, user1, user2, user3, rewardManager, tokenManager, mintReceiver, positionRouter] = provider.getWallets()
+  const [wallet, user0, user1, user2, user3, rewardManager, tokenManager, mintReceiver, positionRouter, swapRouter, liquidityRouter] = provider.getWallets()
   let vault
   let flpManager
   let flp
@@ -90,7 +90,9 @@ describe("Timelock", function () {
       250, // _allowedDeviationBasisPoints
       fastPriceEvents.address, // _fastPriceEvents
       tokenManager.address, // _tokenManager
-      positionRouter.address // _positionRouter
+      positionRouter.address, // _positionRouter
+      swapRouter.address, // _swapRouter
+      liquidityRouter.address // _liquidityRouter
     ])
 
     await fastPriceFeed.setGov(timelock.address)

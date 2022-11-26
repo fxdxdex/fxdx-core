@@ -8,6 +8,7 @@ import "../libraries/token/SafeERC20.sol";
 import "../libraries/utils/ReentrancyGuard.sol";
 import "../libraries/utils/Address.sol";
 
+import "./interfaces/IRewardRouter.sol";
 import "./interfaces/IRewardTracker.sol";
 import "./interfaces/IVester.sol";
 import "../tokens/interfaces/IMintable.sol";
@@ -15,7 +16,7 @@ import "../tokens/interfaces/IWETH.sol";
 import "../core/interfaces/IFlpManager.sol";
 import "../access/Governable.sol";
 
-contract RewardRouterV2 is ReentrancyGuard, Governable {
+contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address payable;
@@ -37,12 +38,13 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
     address public stakedFlpTracker;
     address public feeFlpTracker;
 
-    address public flpManager;
+    address public override flpManager;
 
     address public fxdxVester;
     address public flpVester;
 
     mapping (address => address) public pendingReceivers;
+    mapping (address => bool) public override isLiquidityRouter;
 
     event StakeFxdx(address account, address token, uint256 amount);
     event UnstakeFxdx(address account, address token, uint256 amount);
@@ -93,9 +95,18 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         flpVester = _flpVester;
     }
 
+    modifier onlyLiquidityRouter() {
+        require(isLiquidityRouter[msg.sender], "RewardRouter: forbidden");
+        _;
+    }
+
     // to help users who accidentally send their tokens to this contract
     function withdrawToken(address _token, address _account, uint256 _amount) external onlyGov {
         IERC20(_token).safeTransfer(_account, _amount);
+    }
+
+    function setLiquidityRouter(address _liquidityRouter, bool _isActive) external override onlyGov {
+        isLiquidityRouter[_liquidityRouter] = _isActive;
     }
 
     function batchStakeFxdxForAccount(address[] memory _accounts, uint256[] memory _amounts) external nonReentrant onlyGov {
@@ -125,7 +136,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         _unstakeFxdx(msg.sender, esFxdx, _amount, true);
     }
 
-    function mintAndStakeFlp(address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external nonReentrant returns (uint256) {
+    function mintAndStakeFlp(address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant returns (uint256) {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
         address account = msg.sender;
@@ -138,7 +149,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         return flpAmount;
     }
 
-    function mintAndStakeFlpETH(uint256 _minUsdf, uint256 _minFlp) external payable nonReentrant returns (uint256) {
+    function mintAndStakeFlpETH(uint256 _minUsdf, uint256 _minFlp) external override payable nonReentrant returns (uint256) {
         require(msg.value > 0, "RewardRouter: invalid msg.value");
 
         IWETH(weth).deposit{value: msg.value}();
@@ -155,7 +166,19 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         return flpAmount;
     }
 
-    function unstakeAndRedeemFlp(address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external nonReentrant returns (uint256) {
+    function mintAndStakeFlpForAccount(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant onlyLiquidityRouter returns (uint256) {
+        require(_amount > 0, "RewardRouter: invalid _amount");
+
+        uint256 flpAmount = IFlpManager(flpManager).addLiquidityForAccount(_fundingAccount, _account, _token, _amount, _minUsdf, _minFlp);
+        IRewardTracker(feeFlpTracker).stakeForAccount(_account, _account, flp, flpAmount);
+        IRewardTracker(stakedFlpTracker).stakeForAccount(_account, _account, feeFlpTracker, flpAmount);
+
+        emit StakeFlp(_account, flpAmount);
+
+        return flpAmount;
+    }
+
+    function unstakeAndRedeemFlp(address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
         require(_flpAmount > 0, "RewardRouter: invalid _flpAmount");
 
         address account = msg.sender;
@@ -168,7 +191,7 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         return amountOut;
     }
 
-    function unstakeAndRedeemFlpETH(uint256 _flpAmount, uint256 _minOut, address payable _receiver) external nonReentrant returns (uint256) {
+    function unstakeAndRedeemFlpETH(uint256 _flpAmount, uint256 _minOut, address payable _receiver) external override nonReentrant returns (uint256) {
         require(_flpAmount > 0, "RewardRouter: invalid _flpAmount");
 
         address account = msg.sender;
@@ -181,6 +204,18 @@ contract RewardRouterV2 is ReentrancyGuard, Governable {
         _receiver.sendValue(amountOut);
 
         emit UnstakeFlp(account, _flpAmount);
+
+        return amountOut;
+    }
+
+    function unstakeAndRedeemFlpForAccount(address _account, address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant onlyLiquidityRouter returns (uint256) {
+        require(_flpAmount > 0, "RewardRouter: invalid _flpAmount");
+
+        IRewardTracker(stakedFlpTracker).unstakeForAccount(_account, feeFlpTracker, _flpAmount, _account);
+        IRewardTracker(feeFlpTracker).unstakeForAccount(_account, flp, _flpAmount, _account);
+        uint256 amountOut = IFlpManager(flpManager).removeLiquidityForAccount(_account, _tokenOut, _flpAmount, _minOut, _receiver);
+
+        emit UnstakeFlp(_account, _flpAmount);
 
         return amountOut;
     }

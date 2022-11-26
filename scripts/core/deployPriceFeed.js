@@ -1,6 +1,5 @@
-const { getFrameSigner, deployContract, contractAt , sendTxn, readTmpAddresses, writeTmpAddresses } = require("../shared/helpers")
+const { getFrameSigner, deployContract, contractAt , sendTxn } = require("../shared/helpers")
 const { expandDecimals } = require("../../test/shared/utilities")
-const { toUsd } = require("../../test/shared/units")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
@@ -47,25 +46,31 @@ async function deployPriceFeed() {
   const tokenManager = { address: addresses.tokenManager }
 
   const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
+  const swapRouter = await contractAt("SwapRouter", addresses.swapRouter)
+  const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
 
   // const fastPriceEvents = await contractAt("FastPriceEvents", "0x4530b7DE1958270A2376be192a24175D795e1b07", signer)
   const fastPriceEvents = await deployContract("FastPriceEvents", [])
 
   // const chainlinkFlags = { address: "0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83" }
   const secondaryPriceFeed = await deployContract("FastPriceFeed", [
-    5 * 60, // _priceDuration
+    2 * 60, // _priceDuration
     60 * 60, // _maxPriceUpdateDelay
     0, // _minBlockInterval
     750, // _maxDeviationBasisPoints
     fastPriceEvents.address, // _fastPriceEvents
     tokenManager.address, // _tokenManager
-    positionRouter.address
+    positionRouter.address,
+    swapRouter.address,
+    liquidityRouter.address
   ])
 
   await sendTxn(secondaryPriceFeed.initialize(1, signers, updaters), "secondaryPriceFeed.initialize")
   await sendTxn(secondaryPriceFeed.setMaxTimeDeviation(60 * 60), "secondaryPriceFeed.setMaxTimeDeviation")
 
   await sendTxn(positionRouter.setPositionKeeper(secondaryPriceFeed.address, true), "positionRouter.setPositionKeeper(secondaryPriceFeed)")
+  await sendTxn(swapRouter.setRequestKeeper(secondaryPriceFeed.address, true), "swapRouter.setRequestKeeper(secondaryPriceFeed)")
+  await sendTxn(liquidityRouter.setRequestKeeper(secondaryPriceFeed.address, true), "liquidityRouter.setRequestKeeper(secondaryPriceFeed)")
 
   await sendTxn(fastPriceEvents.setIsPriceFeed(secondaryPriceFeed.address, true), "fastPriceEvents.setIsPriceFeed")
 

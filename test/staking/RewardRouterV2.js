@@ -349,7 +349,11 @@ describe("RewardRouterV2", function () {
     expect(await feeFxdxTracker.claimable(user1.address)).gt("3560000000000000000") // 3.56, 100 / 28 => ~3.57
     expect(await feeFxdxTracker.claimable(user1.address)).lt("3580000000000000000") // 3.58
 
-    await timelock.mint(esFxdx.address, expandDecimals(500, 18))
+    await timelock.signalMint(esFxdx.address, tokenManager.address, expandDecimals(500, 18))
+    await increaseTime(provider, 20)
+    await mineBlock(provider)
+
+    await timelock.processMint(esFxdx.address, tokenManager.address, expandDecimals(500, 18))
     await esFxdx.connect(tokenManager).transferFrom(tokenManager.address, user2.address, expandDecimals(500, 18))
     await rewardRouter.connect(user2).stakeEsFxdx(expandDecimals(500, 18))
 

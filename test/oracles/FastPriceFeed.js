@@ -57,6 +57,10 @@ describe("FastPriceFeed", function () {
     router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     positionRouter = await deployContract("PositionRouter", [vault.address, router.address, bnb.address, depositFee, minExecutionFee])
 
+    const rewardRouter = await deployContract("RewardRouterV2", [])
+    const swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
+    const liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
+
     fastPriceEvents = await deployContract("FastPriceEvents", [])
     fastPriceFeed = await deployContract("FastPriceFeed", [
       5 * 60, // _priceDuration
@@ -65,7 +69,9 @@ describe("FastPriceFeed", function () {
       250, // _maxDeviationBasisPoints
       fastPriceEvents.address, // _fastPriceEvents
       tokenManager.address, // _tokenManager
-      positionRouter.address // _positionRouter
+      positionRouter.address, // _positionRouter
+      swapRouter.address, // _swapRouter
+      liquidityRouter.address // _liquidityRouter
     ])
     await fastPriceFeed.initialize(2, [signer0.address, signer1.address], [updater0.address, updater1.address])
     await fastPriceEvents.setIsPriceFeed(fastPriceFeed.address, true)
@@ -171,7 +177,7 @@ describe("FastPriceFeed", function () {
 
     await fastPriceFeed.setGov(user0.address)
 
-    await expect(fastPriceFeed.connect(user0).setPriceDuration(31 * 60))
+    await expect(fastPriceFeed.connect(user0).setPriceDuration(25 * 60 * 60))
       .to.be.revertedWith("FastPriceFeed: invalid _priceDuration")
 
     expect(await fastPriceFeed.priceDuration()).eq(5 * 60)
