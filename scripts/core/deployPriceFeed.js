@@ -49,7 +49,7 @@ async function deployPriceFeed() {
   const swapRouter = await contractAt("SwapRouter", addresses.swapRouter)
   const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
 
-  // const fastPriceEvents = await contractAt("FastPriceEvents", "0x4530b7DE1958270A2376be192a24175D795e1b07", signer)
+  // const fastPriceEvents = await contractAt("FastPriceEvents", addresses.fastPriceEvents)
   const fastPriceEvents = await deployContract("FastPriceEvents", [])
 
   // const chainlinkFlags = { address: "0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83" }

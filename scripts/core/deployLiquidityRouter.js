@@ -9,7 +9,7 @@ async function deploy() {
   const router = await contractAt("Router", addresses.router)
   const rewardRouterV2 = await contractAt("RewardRouterV2", addresses.rewardRouterV2)
   const weth = await contractAt("WETH", tokens.nativeToken.address)
-  const minExecutionFee = "10000000000000000" // 0.0003 ETH
+  const minExecutionFee = "10000000000000000" // 0.01 ETH
 
   const liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouterV2.address, weth.address, minExecutionFee], "LiquidityRouter")
   // const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
