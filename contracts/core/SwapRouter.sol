@@ -200,6 +200,11 @@ contract SwapRouter is ISwapRouter, BaseRequestRouter {
         );
     }
 
+    function getSwapRequestPath(bytes32 _key) public view returns (address[] memory) {
+        SwapRequest memory request = swapRequests[_key];
+        return request.path;
+    }
+
     function executeSwap(bytes32 _key, address payable _executionFeeReceiver) public nonReentrant returns (bool) {
         SwapRequest memory request = swapRequests[_key];
         // if the request was already executed or cancelled, return true so that the executeSwaps loop will continue executing the next request
