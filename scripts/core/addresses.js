@@ -107,7 +107,7 @@ module.exports = {
     esFxdx: "0x0C1799A98d9Af3beE56c217acC8CB989CA6a0481",
     positionManager: "0x6b1409Dc8C3182CdF3413F36C126c93A454A2f2e",
     positionRouter: "0xd9d9bF13fee2674687Fd37f030E3EC82F0d608c3",
-    swapRouter: "0xF997cC8f996aD0673ea19F77906bDfcfb92E3103",
+    swapRouter: "0x508192f30CC01de0D10063D0981Fb63890C5000C",
     liquidityRouter: "0xC58e6c0ac5b9621B0a9AD148BE699Fde53488d8d",
     referralReader: "0x5410a9e90c31C59B4ACd9Fd41f920664c44b439C",
     referralStorage: "0xB2440A67229a941F9c48F53fD51B15c01a8dCb9E",
@@ -137,7 +137,7 @@ module.exports = {
     timelock: "0x5C0f2381e54E5acAFcF005F980A85c4968A36ccE",
     fastPriceEvents: "0x19b390CbFDCCbcbbf540c4bA033a1667bcF6176e",
     fastPriceFeedOld: "0xb6C7381211Ebf909d70259456dd343bDb0A34332",
-    fastPriceFeed: "0xc84b81a33fd13678daEFeE822fba111141E07011",
+    fastPriceFeed: "0xE04A19c1086B324C5E93c99b94157E5A4781BD87",
     priceFeedTimelock: "0xC4Dc9b1f428db1CEd7b747f5C3F39eE4778833de",
     stakedFlp: "0x6a4E2B27aef392f3485f8FaB76d8E860BC62A3D4",
     flpBalance: "0xD85eaE8B8a68CF586766e8Fb49E14292d96A6b6f"
