@@ -75,7 +75,7 @@ contract VaultReader {
     }
 
     function getVaultTokenInfoV5(address _vault, address _positionManager, address _weth, uint256 _usdfAmount, address[] memory _tokens) public view returns (uint256[] memory) {
-        uint256 propsLength = 16;
+        uint256 propsLength = 17;
 
         IVault vault = IVault(_vault);
         IVaultPriceFeed priceFeed = IVaultPriceFeed(vault.priceFeed());
@@ -104,6 +104,7 @@ contract VaultReader {
             amounts[i * propsLength + 13] = priceFeed.getPrimaryPrice(token, false);
             amounts[i * propsLength + 14] = priceFeed.getPrimaryPrice(token, true);
             amounts[i * propsLength + 15] = priceFeed.spreadBasisPoints(token);
+            amounts[i * propsLength + 16] = vault.globalShortAveragePrices(token);
         }
 
         return amounts;
