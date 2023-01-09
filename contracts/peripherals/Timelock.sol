@@ -51,7 +51,7 @@ contract Timelock is ITimelock {
     event SignalSetGov(address target, address gov, bytes32 action);
     event SignalSetHandler(address target, address handler, bool isActive, bytes32 action);
     event SignalSetPriceFeed(address vault, address priceFeed, bytes32 action);
-    event SignalRedeemUsdf(address vault, address token, uint256 amount);
+    event SignalRedeemUsdf(address vault, address token, uint256 amount, bytes32 action);
     event SignalVaultSetTokenConfig(
         address vault,
         address token,
@@ -60,7 +60,8 @@ contract Timelock is ITimelock {
         uint256 minProfitBps,
         uint256 maxUsdfAmount,
         bool isStable,
-        bool isShortable
+        bool isShortable,
+        bytes32 action
     );
     event ClearAction(bytes32 action);
 
@@ -457,7 +458,7 @@ contract Timelock is ITimelock {
     function signalRedeemUsdf(address _vault, address _token, uint256 _amount) external onlyAdmin {
         bytes32 action = keccak256(abi.encodePacked("redeemUsdf", _vault, _token, _amount));
         _setPendingAction(action);
-        emit SignalRedeemUsdf(_vault, _token, _amount);
+        emit SignalRedeemUsdf(_vault, _token, _amount, action);
     }
 
     function redeemUsdf(address _vault, address _token, uint256 _amount) external onlyAdmin {
@@ -510,7 +511,8 @@ contract Timelock is ITimelock {
             _minProfitBps,
             _maxUsdfAmount,
             _isStable,
-            _isShortable
+            _isShortable,
+            action
         );
     }
 

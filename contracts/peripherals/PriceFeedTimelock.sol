@@ -36,13 +36,14 @@ contract PriceFeedTimelock {
     event SignalApprove(address token, address spender, uint256 amount, bytes32 action);
     event SignalWithdrawToken(address target, address token, address receiver, uint256 amount, bytes32 action);
     event SignalSetGov(address target, address gov, bytes32 action);
-    event SignalSetPriceFeedWatcher(address fastPriceFeed, address account, bool isActive);
+    event SignalSetPriceFeedWatcher(address fastPriceFeed, address account, bool isActive, bytes32 action);
     event SignalPriceFeedSetTokenConfig(
         address vaultPriceFeed,
         address token,
         address priceFeed,
         uint256 priceDecimals,
-        bool isStrictStable
+        bool isStrictStable,
+        bytes32 action
     );
     event ClearAction(bytes32 action);
 
@@ -215,7 +216,7 @@ contract PriceFeedTimelock {
     function signalSetPriceFeedWatcher(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {
         bytes32 action = keccak256(abi.encodePacked("setPriceFeedWatcher", _fastPriceFeed, _account, _isActive));
         _setPendingAction(action);
-        emit SignalSetPriceFeedWatcher(_fastPriceFeed, _account, _isActive);
+        emit SignalSetPriceFeedWatcher(_fastPriceFeed, _account, _isActive, action);
     }
 
     function setPriceFeedWatcher(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {
@@ -228,7 +229,7 @@ contract PriceFeedTimelock {
     function signalSetPriceFeedUpdater(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {
         bytes32 action = keccak256(abi.encodePacked("setPriceFeedUpdater", _fastPriceFeed, _account, _isActive));
         _setPendingAction(action);
-        emit SignalSetPriceFeedWatcher(_fastPriceFeed, _account, _isActive);
+        emit SignalSetPriceFeedWatcher(_fastPriceFeed, _account, _isActive, action);
     }
 
     function setPriceFeedUpdater(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {
@@ -261,7 +262,8 @@ contract PriceFeedTimelock {
             _token,
             _priceFeed,
             _priceDecimals,
-            _isStrictStable
+            _isStrictStable,
+            action
         );
     }
 

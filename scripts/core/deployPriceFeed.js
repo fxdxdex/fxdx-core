@@ -64,6 +64,7 @@ async function deployPriceFeed() {
     swapRouter.address,
     liquidityRouter.address
   ])
+  // const secondaryPriceFeed = await contractAt("FastPriceFeed", addresses.fastPriceFeed);
 
   await sendTxn(secondaryPriceFeed.initialize(1, signers, updaters), "secondaryPriceFeed.initialize")
   await sendTxn(secondaryPriceFeed.setMaxTimeDeviation(60 * 60), "secondaryPriceFeed.setMaxTimeDeviation")
