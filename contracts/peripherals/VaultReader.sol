@@ -109,4 +109,63 @@ contract VaultReader {
 
         return amounts;
     }
+
+    function getVaultStates(address _vault, address[] memory _tokens) public view returns (
+        address[] memory,
+        uint256[] memory,
+        bool[] memory
+    ) {
+        IVault vault = IVault(_vault);
+
+        address[] memory addressValues = new address[](2);
+        uint256[] memory intValues = new uint256[](13 + _tokens.length * 7);
+        bool[] memory boolValues = new bool[](3 + _tokens.length * 2);
+
+        addressValues[0] = vault.priceFeed();
+        addressValues[1] = vault.gov();
+
+        boolValues[0] = vault.isSwapEnabled();
+        boolValues[1] = vault.hasDynamicFees();
+        boolValues[2] = vault.inPrivateLiquidationMode();
+
+        intValues[0] = vault.maxLeverage();
+        intValues[1] = vault.liquidationFeeUsd();
+        intValues[2] = vault.taxBasisPoints();
+        intValues[3] = vault.stableTaxBasisPoints();
+        intValues[4] = vault.mintBurnFeeBasisPoints();
+        intValues[5] = vault.swapFeeBasisPoints();
+        intValues[6] = vault.stableSwapFeeBasisPoints();
+        intValues[7] = vault.marginFeeBasisPoints();
+        intValues[8] = vault.minProfitTime();
+        intValues[9] = vault.fundingInterval();
+        intValues[10] = vault.fundingRateFactor();
+        intValues[11] = vault.stableFundingRateFactor();
+        intValues[12] = vault.maxGasPrice();
+
+        uint256 intValuesLength = 7;
+        uint256 boolValuesLength = 2;
+
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            address token = _tokens[i];
+
+            intValues[intValuesLength * i + 13] = vault.tokenDecimals(token);
+            intValues[intValuesLength * i + 14] = vault.minProfitBasisPoints(token);
+
+            intValues[intValuesLength * i + 15] = vault.tokenWeights(token);
+            intValues[intValuesLength * i + 16] = vault.usdfAmounts(token);
+            intValues[intValuesLength * i + 17] = vault.maxUsdfAmounts(token);
+            intValues[intValuesLength * i + 18] = vault.bufferAmounts(token);
+
+            intValues[intValuesLength * i + 19] = vault.maxGlobalShortSizes(token);
+
+            boolValues[boolValuesLength * i + 3] = vault.stableTokens(token);
+            boolValues[boolValuesLength * i + 4] = vault.shortableTokens(token);
+        }
+
+        return (
+            addressValues,
+            intValues,
+            boolValues
+        );
+    }
 }
