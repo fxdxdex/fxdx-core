@@ -406,7 +406,7 @@ contract VaultPriceFeed is IVaultPriceFeed {
 
             intValues[intValuesLength * i + 2] = adjustmentBasisPoints[token];
             intValues[intValuesLength * i + 3] = spreadBasisPoints[token];
-            intValues[intValuesLength * i + 3] = priceDecimals[token];
+            intValues[intValuesLength * i + 4] = priceDecimals[token];
 
             boolValues[boolValuesLength * i + 3] = isAdjustmentAdditive[token];
             boolValues[boolValuesLength * i + 4] = strictStableTokens[token];
