@@ -480,4 +480,38 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
 
         return true;
     }
+
+    function getStates(address[] memory _tokens) public view returns (
+        address[] memory,
+        uint256[] memory,
+        bool[] memory
+    ) {
+        address[] memory addressValues = new address[](1);
+        uint256[] memory intValues = new uint256[](7 + _tokens.length);
+        bool[] memory boolValues = new bool[](1);
+
+        addressValues[0] = gov;
+
+        boolValues[0] = isSpreadEnabled;
+
+        intValues[0] = maxPriceUpdateDelay;
+        intValues[1] = spreadBasisPointsIfInactive;
+        intValues[2] = spreadBasisPointsIfChainError;
+        intValues[3] = minBlockInterval;
+        intValues[4] = maxDeviationBasisPoints;
+        intValues[5] = priceDataInterval;
+        intValues[6] = priceDuration;
+
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            address token = _tokens[i];
+
+            intValues[i + 6] = maxCumulativeDeltaDiffs[token];
+        }
+
+        return (
+            addressValues,
+            intValues,
+            boolValues
+        );
+    }
 }

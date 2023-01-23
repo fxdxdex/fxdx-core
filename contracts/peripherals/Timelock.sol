@@ -583,4 +583,30 @@ contract Timelock is ITimelock {
         delete pendingActions[_action];
         emit ClearAction(_action);
     }
+
+    function getStates() public view returns (
+        address[] memory,
+        uint256[] memory,
+        bool[] memory
+    ) {
+        address[] memory addressValues = new address[](3);
+        uint256[] memory intValues = new uint256[](3);
+        bool[] memory boolValues = new bool[](1);
+
+        addressValues[0] = admin;
+        addressValues[1] = tokenManager;
+        addressValues[2] = mintReceiver;
+
+        intValues[0] = buffer;
+        intValues[1] = marginFeeBasisPoints;
+        intValues[2] = maxMarginFeeBasisPoints;
+
+        boolValues[0] = shouldToggleIsLeverageEnabled;
+
+        return (
+            addressValues,
+            intValues,
+            boolValues
+        );
+    }
 }

@@ -377,4 +377,45 @@ contract VaultPriceFeed is IVaultPriceFeed {
         if (reserve1 == 0) { return 0; }
         return reserve0.mul(PRICE_PRECISION).div(reserve1);
     }
+
+    function getStates(address[] memory _tokens) public view returns (
+        address[] memory,
+        uint256[] memory,
+        bool[] memory
+    ) {
+        address[] memory addressValues = new address[](1 + _tokens.length);
+        uint256[] memory intValues = new uint256[](2 + _tokens.length * 3);
+        bool[] memory boolValues = new bool[](3 + _tokens.length * 2);
+
+        addressValues[0] = gov;
+
+        boolValues[0] = useV2Pricing;
+        boolValues[1] = isAmmEnabled;
+        boolValues[2] = isSecondaryPriceEnabled;
+
+        intValues[0] = priceSampleSpace;
+        intValues[1] = maxStrictPriceDeviation;
+
+        uint256 intValuesLength = 3;
+        uint256 boolValuesLength = 2;
+
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            address token = _tokens[i];
+
+            addressValues[i + 1] = priceFeeds[token];
+
+            intValues[intValuesLength * i + 2] = adjustmentBasisPoints[token];
+            intValues[intValuesLength * i + 3] = spreadBasisPoints[token];
+            intValues[intValuesLength * i + 3] = priceDecimals[token];
+
+            boolValues[boolValuesLength * i + 3] = isAdjustmentAdditive[token];
+            boolValues[boolValuesLength * i + 4] = strictStableTokens[token];
+        }
+
+        return (
+            addressValues,
+            intValues,
+            boolValues
+        );
+    }
 }
