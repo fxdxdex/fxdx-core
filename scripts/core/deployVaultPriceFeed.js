@@ -18,7 +18,7 @@ async function main() {
   await sendTxn(vaultPriceFeed.setIsAmmEnabled(false), "vaultPriceFeed.setIsAmmEnabled")
 
   await sendTxn(timelock.signalSetPriceFeed(vault.address, vaultPriceFeed.address), "timelock.signalSetPriceFeed")
-  await sendTxn(timelock.setPriceFeed(vault.address, vaultPriceFeed.address), "timelock.setPriceFeed")
+  // await sendTxn(timelock.setPriceFeed(vault.address, vaultPriceFeed.address), "timelock.setPriceFeed")
 }
 
 main()
