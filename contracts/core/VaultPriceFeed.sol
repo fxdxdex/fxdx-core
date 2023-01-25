@@ -384,7 +384,7 @@ contract VaultPriceFeed is IVaultPriceFeed {
         bool[] memory
     ) {
         address[] memory addressValues = new address[](1 + _tokens.length);
-        uint256[] memory intValues = new uint256[](2 + _tokens.length * 3);
+        uint256[] memory intValues = new uint256[](2 + _tokens.length * 4);
         bool[] memory boolValues = new bool[](3 + _tokens.length * 2);
 
         addressValues[0] = gov;
@@ -396,7 +396,7 @@ contract VaultPriceFeed is IVaultPriceFeed {
         intValues[0] = priceSampleSpace;
         intValues[1] = maxStrictPriceDeviation;
 
-        uint256 intValuesLength = 3;
+        uint256 intValuesLength = 4;
         uint256 boolValuesLength = 2;
 
         for (uint256 i = 0; i < _tokens.length; i++) {
@@ -405,8 +405,9 @@ contract VaultPriceFeed is IVaultPriceFeed {
             addressValues[i + 1] = priceFeeds[token];
 
             intValues[intValuesLength * i + 2] = adjustmentBasisPoints[token];
-            intValues[intValuesLength * i + 3] = spreadBasisPoints[token];
-            intValues[intValuesLength * i + 4] = priceDecimals[token];
+            intValues[intValuesLength * i + 3] = lastAdjustmentTimings[token];
+            intValues[intValuesLength * i + 4] = spreadBasisPoints[token];
+            intValues[intValuesLength * i + 5] = priceDecimals[token];
 
             boolValues[boolValuesLength * i + 3] = isAdjustmentAdditive[token];
             boolValues[boolValuesLength * i + 4] = strictStableTokens[token];

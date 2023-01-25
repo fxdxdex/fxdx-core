@@ -29,6 +29,19 @@ async function main() {
     addresses.fastPriceFeed, // _vaultPriceFeed
     admin, // deployer
   ), `priceFeedTimelock.${method}(fastPriceFeed, admin)`)
+
+  // const vaultPriceFeed = await contractAt("VaultPriceFeed", addresses.vaultPriceFeed)
+  // const fastPriceFeed = await contractAt("FastPriceFeed", addresses.fastPriceFeed)
+
+  // await sendTxn(
+  //   vaultPriceFeed.setGov(priceFeedTimelock.address),
+  //   `vaultPriceFeed.setGov(priceFeedTimelock)`
+  // )
+
+  // await sendTxn(
+  //   fastPriceFeed.setGov(priceFeedTimelock.address),
+  //   `fastPriceFeed.setGov(priceFeedTimelock)`
+  // )
 }
 
 main()

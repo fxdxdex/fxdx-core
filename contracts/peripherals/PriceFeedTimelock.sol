@@ -37,6 +37,7 @@ contract PriceFeedTimelock {
     event SignalWithdrawToken(address target, address token, address receiver, uint256 amount, bytes32 action);
     event SignalSetGov(address target, address gov, bytes32 action);
     event SignalSetPriceFeedWatcher(address fastPriceFeed, address account, bool isActive, bytes32 action);
+    event SignalSetPriceFeedUpdater(address fastPriceFeed, address account, bool isActive, bytes32 action);
     event SignalPriceFeedSetTokenConfig(
         address vaultPriceFeed,
         address token,
@@ -229,7 +230,7 @@ contract PriceFeedTimelock {
     function signalSetPriceFeedUpdater(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {
         bytes32 action = keccak256(abi.encodePacked("setPriceFeedUpdater", _fastPriceFeed, _account, _isActive));
         _setPendingAction(action);
-        emit SignalSetPriceFeedWatcher(_fastPriceFeed, _account, _isActive, action);
+        emit SignalSetPriceFeedUpdater(_fastPriceFeed, _account, _isActive, action);
     }
 
     function setPriceFeedUpdater(address _fastPriceFeed, address _account, bool _isActive) external onlyAdmin {

@@ -505,7 +505,7 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
         for (uint256 i = 0; i < _tokens.length; i++) {
             address token = _tokens[i];
 
-            intValues[i + 6] = maxCumulativeDeltaDiffs[token];
+            intValues[i + 7] = maxCumulativeDeltaDiffs[token];
         }
 
         return (
