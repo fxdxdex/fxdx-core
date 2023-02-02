@@ -1,5 +1,4 @@
 // price feeds https://docs.chain.link/docs/binance-smart-chain-addresses/
-const { expandDecimals } = require("../../test/shared/utilities")
 
 module.exports = {
   bsc: {
@@ -509,6 +508,80 @@ module.exports = {
     nativeToken: {
       name: "weth",
       address: "0x2B918c4E864056D7F9feB88D05d71F922fDDfFD0",
+      decimals: 18
+    }
+  },
+  optimismGoerli: {
+    // https://docs.chain.link/docs/data-feeds/price-feeds/addresses/
+    btcPriceFeed: { address: "0xC16679B963CeB52089aD2d95312A5b85E318e9d2" },
+    ethPriceFeed: { address: "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8" },
+    usdtPriceFeed: { address: "0x2e2147bCd571CE816382485E59Cd145A2b7CA451" },
+    usdcPriceFeed: { address: "0x2636B223652d388721A0ED2861792DA9062D8C73" },
+    btc: {
+      name: "btc",
+      address: "0x3491d4649aeBC9f46370DFF87c9887f557fb5954",
+      decimals: 18,
+      priceFeed: "0xC16679B963CeB52089aD2d95312A5b85E318e9d2",
+      priceDecimals: 8,
+      fastPricePrecision: 1000,
+      maxCumulativeDeltaDiff: 10 * 1000 * 1000,
+      isStrictStable: false,
+      tokenWeight: 27000,
+      minProfitBps: 0,
+      maxUsdfAmount: 50 * 1000 *1000,
+      bufferAmount: 450,
+      isStable: false,
+      isShortable: true,
+      maxGlobalShortSize: 30 * 1000 * 1000,
+    },
+    eth: {
+      name: "eth",
+      address: "0x5088964b5174E7DEe70a5343066f6a6Ac5ca71Fc",
+      decimals: 18,
+      priceFeed: "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8",
+      priceDecimals: 8,
+      fastPricePrecision: 1000,
+      maxCumulativeDeltaDiff: 10 * 1000 * 1000,
+      isStrictStable: false,
+      tokenWeight: 28000,
+      minProfitBps: 0,
+      maxUsdfAmount: 120 * 1000 * 1000,
+      bufferAmount: 15000,
+      isStable: false,
+      isShortable: true,
+      maxGlobalShortSize: 30 * 1000 * 1000,
+    },
+    usdc: {
+      name: "usdc",
+      address: "0xD1D57Fd32AE51eB778730d4C740E8C041891F525",
+      decimals: 18,
+      priceFeed: "0x2636B223652d388721A0ED2861792DA9062D8C73",
+      priceDecimals: 8,
+      isStrictStable: true,
+      tokenWeight: 32000,
+      minProfitBps: 0,
+      maxUsdfAmount: 120 * 1000 * 1000,
+      bufferAmount: 60 * 1000 * 1000,
+      isStable: true,
+      isShortable: false
+    },
+    usdt: {
+      name: "usdt",
+      address: "0x169E3A9F6b76Ad6b3149F1d30d3Ab4d4D6f3EecC",
+      decimals: 18,
+      priceFeed: "0x2e2147bCd571CE816382485E59Cd145A2b7CA451",
+      priceDecimals: 8,
+      isStrictStable: true,
+      tokenWeight: 3000,
+      minProfitBps: 0,
+      maxUsdfAmount: 10 * 1000 * 1000,
+      bufferAmount: 4 * 1000 * 1000,
+      isStable: true,
+      isShortable: false
+    },
+    nativeToken: {
+      name: "weth",
+      address: "0x5088964b5174E7DEe70a5343066f6a6Ac5ca71Fc",
       decimals: 18
     }
   },

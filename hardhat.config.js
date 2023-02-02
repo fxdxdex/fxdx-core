@@ -25,7 +25,9 @@ const {
   MAINNET_URL,
   MAINNET_DEPLOY_KEY,
   GOERLI_URL,
-  GOERLI_DEPLOY_KEY
+  GOERLI_DEPLOY_KEY,
+  OPTIMISM_GOERLI_URL,
+  OPTIMISM_GOERLI_DEPLOY_KEY
 } = require("./env.json")
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -95,6 +97,12 @@ module.exports = {
       // gasPrice: 10000000000,
       chainId: 5,
       accounts: [GOERLI_DEPLOY_KEY]
+    },
+    optimismGoerli: {
+      url: OPTIMISM_GOERLI_URL,
+      // gasPrice: 10000000000,
+      chainId: 420,
+      accounts: [OPTIMISM_GOERLI_DEPLOY_KEY]
     }
   },
   etherscan: {

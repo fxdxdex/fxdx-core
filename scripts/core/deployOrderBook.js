@@ -10,13 +10,16 @@ async function main() {
 
   const orderBook = await deployContract("OrderBook", []);
 
+  // const minExecutionFee = "10000000000000000" // 0.01 for L1
+  const minExecutionFee = "100000000000000" // 0.0001 for L2
+
   // Arbitrum mainnet addresses
   await sendTxn(orderBook.initialize(
     addresses.router, // router
     addresses.vault, // vault
     nativeToken.address, // weth
     addresses.usdf, // usdf
-    "10000000000000000", // 0.01 AVAX
+    minExecutionFee, // 0.01 AVAX
     expandDecimals(10, 30) // min purchase token amount usd
   ), "orderBook.initialize");
 }
