@@ -10,7 +10,8 @@ async function deploy() {
   const rewardRouterV2 = await contractAt("RewardRouterV2", addresses.rewardRouterV2)
   const weth = await contractAt("WETH", tokens.nativeToken.address)
   // const minExecutionFee = "10000000000000000" // 0.01 ETH for L1
-  const minExecutionFee = "100000000000000" // 0.0001 for L2
+  // const minExecutionFee = "100000000000000" // 0.0001 for Arbitrum
+  const minExecutionFee = "2000000000000000" // 0.002 ETH for Optimism
 
   const liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouterV2.address, weth.address, minExecutionFee], "LiquidityRouter")
   // const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
@@ -18,6 +19,7 @@ async function deploy() {
   await sendTxn(router.addPlugin(liquidityRouter.address), "router.addPlugin")
   await sendTxn(rewardRouterV2.setLiquidityRouter(liquidityRouter.address, true), "rewardRouterV2.setLiquidityRouter")
   await sendTxn(liquidityRouter.setDelayValues(1, 180, 30 * 60), "liquidityRouter.setDelayValues")
+  // await sendTxn(liquidityRouter.setMinExecutionFee(minExecutionFee), "liquidityRouter.setMinExecutionFee")
 }
 
 async function main() {
