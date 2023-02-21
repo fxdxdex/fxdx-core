@@ -206,6 +206,7 @@ describe("LiquidityRouter", function () {
 
     rewardRouter = await deployContract("RewardRouterV2", [])
     await rewardRouter.initialize(
+      vault.address,
       bnb.address,
       fxdx.address,
       esFxdx.address,

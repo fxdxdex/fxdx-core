@@ -14,6 +14,7 @@ import "./interfaces/IVester.sol";
 import "../tokens/interfaces/IMintable.sol";
 import "../tokens/interfaces/IWETH.sol";
 import "../core/interfaces/IFlpManager.sol";
+import "../core/interfaces/IVault.sol";
 import "../access/Governable.sol";
 
 contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
@@ -23,6 +24,7 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
 
     bool public isInitialized;
 
+    address public vault;
     address public weth;
 
     address public fxdx;
@@ -57,6 +59,7 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
     }
 
     function initialize(
+        address _vault,
         address _weth,
         address _fxdx,
         address _esFxdx,
@@ -74,6 +77,7 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         require(!isInitialized, "RewardRouter: already initialized");
         isInitialized = true;
 
+        vault = _vault;
         weth = _weth;
 
         fxdx = _fxdx;
@@ -258,8 +262,9 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         bool _shouldClaimEsFxdx,
         bool _shouldStakeEsFxdx,
         bool _shouldStakeMultiplierPoints,
-        bool _shouldClaimWeth,
-        bool _shouldConvertWethToEth
+        bool _shouldClaimFees,
+        address[] memory _path,
+        bool _shouldConvertFeesToEth
     ) external nonReentrant {
         address account = msg.sender;
 
@@ -292,18 +297,27 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
             }
         }
 
-        if (_shouldClaimWeth) {
-            if (_shouldConvertWethToEth) {
-                uint256 weth0 = IRewardTracker(feeFxdxTracker).claimForAccount(account, address(this));
-                uint256 weth1 = IRewardTracker(feeFlpTracker).claimForAccount(account, address(this));
-
-                uint256 wethAmount = weth0.add(weth1);
-                IWETH(weth).withdraw(wethAmount);
-
-                payable(account).sendValue(wethAmount);
-            } else {
+        if (_shouldClaimFees) {
+            if (_path.length < 2 && !_shouldConvertFeesToEth) {
                 IRewardTracker(feeFxdxTracker).claimForAccount(account, account);
                 IRewardTracker(feeFlpTracker).claimForAccount(account, account);
+            } else {
+                uint256 fee0 = IRewardTracker(feeFxdxTracker).claimForAccount(account, address(this));
+                uint256 fee1 = IRewardTracker(feeFlpTracker).claimForAccount(account, address(this));
+
+                uint256 feeAmount = fee0.add(fee1);
+
+                if (_path.length > 1) {
+                    address swapReceiver = _shouldConvertFeesToEth ? address(this) : account;
+                    IERC20(_path[0]).safeTransfer(vault, feeAmount);
+                    feeAmount = _swap(_path, 0, swapReceiver);
+                }
+
+                if (_shouldConvertFeesToEth) {
+                    IWETH(weth).withdraw(feeAmount);
+
+                    payable(account).sendValue(feeAmount);
+                }
             }
         }
     }
@@ -453,5 +467,18 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         }
 
         emit UnstakeFxdx(_account, _token, _amount);
+    }
+
+    function _swap(address[] memory _path, uint256 _minOut, address _receiver) internal returns (uint256) {
+        if (_path.length == 2) {
+            return _vaultSwap(_path[0], _path[1], _minOut, _receiver);
+        }
+        revert("RewardRouterV2: invalid _path.length");
+    }
+
+    function _vaultSwap(address _tokenIn, address _tokenOut, uint256 _minOut, address _receiver) internal returns (uint256) {
+        uint256 amountOut = IVault(vault).swap(_tokenIn, _tokenOut, _receiver);
+        require(amountOut >= _minOut, "RewardRouterV2: insufficient amountOut");
+        return amountOut;
     }
 }

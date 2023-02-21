@@ -5,10 +5,11 @@ const tokens = require('../core/tokens')[network];
 const addresses = require('../core/addresses')[network];
 
 async function main() {
-  const { nativeToken } = tokens
+  const { nativeToken, usdc } = tokens
 
   const vestingDuration = 365 * 24 * 60 * 60
 
+  const vault = await contractAt("Vault", addresses.vault)
   const flpManager = await contractAt("FlpManager", addresses.flpManager)
   const flp = await contractAt("FLP", addresses.flp)
 
@@ -38,7 +39,7 @@ async function main() {
   // const bonusFxdxDistributor = await contractAt("BonusDistributor", addresses.bonusFxdxDistributor)
 
   const feeFxdxTracker = await deployContract("RewardTracker", ["Staked + Bonus + Fee FXDX", "sbfFXDX"])
-  const feeFxdxDistributor = await deployContract("RewardDistributor", [nativeToken.address, feeFxdxTracker.address])
+  const feeFxdxDistributor = await deployContract("RewardDistributor", [usdc.address, feeFxdxTracker.address])
   await sendTxn(feeFxdxTracker.initialize([bonusFxdxTracker.address, bnFxdx.address], feeFxdxDistributor.address), "feeFxdxTracker.initialize")
   await sendTxn(feeFxdxDistributor.updateLastDistributionTime(), "feeFxdxDistributor.updateLastDistributionTime")
 
@@ -46,7 +47,7 @@ async function main() {
   // const feeFxdxDistributor = await contractAt("RewardDistributor", addresses.feeFxdxDistributor)
 
   const feeFlpTracker = await deployContract("RewardTracker", ["Fee FLP", "fFLP"])
-  const feeFlpDistributor = await deployContract("RewardDistributor", [nativeToken.address, feeFlpTracker.address])
+  const feeFlpDistributor = await deployContract("RewardDistributor", [usdc.address, feeFlpTracker.address])
   await sendTxn(feeFlpTracker.initialize([flp.address], feeFlpDistributor.address), "feeFlpTracker.initialize")
   await sendTxn(feeFlpDistributor.updateLastDistributionTime(), "feeFlpDistributor.updateLastDistributionTime")
 
@@ -59,6 +60,8 @@ async function main() {
   await sendTxn(stakedFlpDistributor.updateLastDistributionTime(), "stakedFlpDistributor.updateLastDistributionTime")
 
   // const stakedFlpTracker = await contractAt("RewardTracker", addresses.stakedFlpTracker)
+  // await sendTxn(stakedFlpTracker.setDepositToken(addresses.feeFlpTracker, false), "stakedFlpTracker.setDepositToken")
+  // await sendTxn(stakedFlpTracker.setDepositToken(feeFlpTracker.address, true), "stakedFlpTracker.setDepositToken")
   // const stakedFlpDistributor = await contractAt("RewardDistributor", addresses.stakedFlpDistributor)
 
   await sendTxn(stakedFxdxTracker.setInPrivateTransferMode(true), "stakedFxdxTracker.setInPrivateTransferMode")
@@ -99,6 +102,7 @@ async function main() {
 
   const rewardRouter = await deployContract("RewardRouterV2", [])
   await sendTxn(rewardRouter.initialize(
+    vault.address,
     nativeToken.address,
     fxdx.address,
     esFxdx.address,

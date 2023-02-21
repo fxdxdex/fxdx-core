@@ -15,7 +15,7 @@ async function main() {
 
   await sendTxn(secondaryPriceFeed.setPrices(
     [tokens.btc.address, tokens.eth.address, tokens.usdc.address, tokens.usdt.address],
-    [expandDecimals(23826, 30), expandDecimals(1669, 30), expandDecimals(1, 30), expandDecimals(1, 30)],
+    [expandDecimals(24338, 30), expandDecimals(1650, 30), expandDecimals(1, 30), expandDecimals(1, 30)],
     Math.floor(Date.now() / 1000),
   ), "secondaryPriceFeed.setPrices")
 }

@@ -4,7 +4,7 @@ const { deployContract } = require("../shared/fixtures")
 const { expandDecimals, getBlockTime, increaseTime, mineBlock, reportGasUsed, print, newWallet } = require("../shared/utilities")
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd, toNormalizedPrice } = require("../shared/units")
-const { initVault, getBnbConfig, getBtcConfig, getDaiConfig } = require("../core/Vault/helpers")
+const { initVault, getBnbConfig, getBtcConfig, getDaiConfig, getEthConfig } = require("../core/Vault/helpers")
 
 use(solidity)
 
@@ -98,6 +98,9 @@ describe("RewardRouterV2", function () {
     await daiPriceFeed.setLatestAnswer(toChainlinkPrice(1))
     await vault.setTokenConfig(...getDaiConfig(dai, daiPriceFeed))
 
+    await ethPriceFeed.setLatestAnswer(toChainlinkPrice(3000))
+    await vault.setTokenConfig(...getEthConfig(eth, ethPriceFeed))
+
     await btcPriceFeed.setLatestAnswer(toChainlinkPrice(60000))
     await vault.setTokenConfig(...getBtcConfig(btc, btcPriceFeed))
 
@@ -176,6 +179,7 @@ describe("RewardRouterV2", function () {
 
     rewardRouter = await deployContract("RewardRouterV2", [])
     await rewardRouter.initialize(
+      vault.address,
       bnb.address,
       fxdx.address,
       esFxdx.address,
@@ -281,6 +285,7 @@ describe("RewardRouterV2", function () {
     expect(await rewardRouter.flpVester()).eq(flpVester.address)
 
     await expect(rewardRouter.initialize(
+      vault.address,
       bnb.address,
       fxdx.address,
       esFxdx.address,
@@ -1192,6 +1197,7 @@ describe("RewardRouterV2", function () {
     // use new rewardRouter, use eth for weth
     const rewardRouterV2 = await deployContract("RewardRouterV2", [])
     await rewardRouterV2.initialize(
+      vault.address,
       eth.address,
       fxdx.address,
       esFxdx.address,
@@ -1308,8 +1314,9 @@ describe("RewardRouterV2", function () {
       true, // _shouldClaimEsFxdx
       true, // _shouldStakeEsFxdx
       true, // _shouldStakeMultiplierPoints
-      true, // _shouldClaimWeth
-      false // _shouldConvertWethToEth
+      true, // _shouldClaimFees
+      [eth.address], // _path
+      false // _shouldConvertFeesToEth
     )
 
     expect(await fxdx.balanceOf(user1.address)).eq(0)
@@ -1336,8 +1343,9 @@ describe("RewardRouterV2", function () {
       false, // _shouldClaimEsFxdx
       false, // _shouldStakeEsFxdx
       false, // _shouldStakeMultiplierPoints
-      true, // _shouldClaimWeth
-      true // _shouldConvertWethToEth
+      true, // _shouldClaimFees
+      [eth.address], // _path
+      true // _shouldConvertFeesToEth
     )
 
     const ethBalance1 = await provider.getBalance(user1.address)
@@ -1363,8 +1371,9 @@ describe("RewardRouterV2", function () {
       true, // _shouldClaimEsFxdx
       false, // _shouldStakeEsFxdx
       false, // _shouldStakeMultiplierPoints
-      false, // _shouldClaimWeth
-      false // _shouldConvertWethToEth
+      false, // _shouldClaimFees
+      [],
+      false // _shouldConvertFeesToEth
     )
 
     expect(await ethBalance1.sub(ethBalance0)).gt(expandDecimals(7, 18))
@@ -1405,14 +1414,19 @@ describe("RewardRouterV2", function () {
     await increaseTime(provider, 24 * 60 * 60)
     await mineBlock(provider)
 
+    await dai.mint(user0.address, expandDecimals(20000000, 18))
+    await dai.connect(user0).transfer(vault.address, expandDecimals(2000000, 18))
+    await vault.directPoolDeposit(dai.address);
+
     await rewardRouterV2.connect(user1).handleRewards(
       true, // _shouldClaimFxdx
       false, // _shouldStakeFxdx
       false, // _shouldClaimEsFxdx
       false, // _shouldStakeEsFxdx
       false, // _shouldStakeMultiplierPoints
-      false, // _shouldClaimWeth
-      false // _shouldConvertWethToEth
+      true, // _shouldClaimFees
+      [eth.address, dai.address], // _path
+      false // _shouldConvertFeesToEth
     )
 
     expect(await ethBalance1.sub(ethBalance0)).gt(expandDecimals(7, 18))
@@ -1425,6 +1439,8 @@ describe("RewardRouterV2", function () {
     expect(await flp.balanceOf(user1.address)).eq(0)
     expect(await eth.balanceOf(user1.address)).gt(expandDecimals(7, 18))
     expect(await eth.balanceOf(user1.address)).lt(expandDecimals(8, 18))
+    expect(await dai.balanceOf(user1.address)).gt(expandDecimals(21000, 18))
+    expect(await dai.balanceOf(user1.address)).lt(expandDecimals(24000, 18))
 
     expect(await stakedFxdxTracker.depositBalances(user1.address, fxdx.address)).eq(expandDecimals(200, 18))
     expect(await stakedFxdxTracker.depositBalances(user1.address, esFxdx.address)).gt(expandDecimals(3571, 18))
