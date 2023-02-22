@@ -306,17 +306,18 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
                 uint256 fee1 = IRewardTracker(feeFlpTracker).claimForAccount(account, address(this));
 
                 uint256 feeAmount = fee0.add(fee1);
+                if (feeAmount > 0) {
+                    if (_path.length > 1) {
+                        address swapReceiver = _shouldConvertFeesToEth ? address(this) : account;
+                        IERC20(_path[0]).safeTransfer(vault, feeAmount);
+                        feeAmount = _swap(_path, 0, swapReceiver);
+                    }
 
-                if (_path.length > 1) {
-                    address swapReceiver = _shouldConvertFeesToEth ? address(this) : account;
-                    IERC20(_path[0]).safeTransfer(vault, feeAmount);
-                    feeAmount = _swap(_path, 0, swapReceiver);
-                }
+                    if (_shouldConvertFeesToEth) {
+                        IWETH(weth).withdraw(feeAmount);
 
-                if (_shouldConvertFeesToEth) {
-                    IWETH(weth).withdraw(feeAmount);
-
-                    payable(account).sendValue(feeAmount);
+                        payable(account).sendValue(feeAmount);
+                    }
                 }
             }
         }

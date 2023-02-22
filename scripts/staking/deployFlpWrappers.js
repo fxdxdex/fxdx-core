@@ -23,7 +23,7 @@ async function main() {
     feeFlpTracker.address
   ])
 
-  // await deployContract("FlpBalance", [flpManager.address, stakedFlpTracker.address])
+  await deployContract("FlpBalance", [flpManager.address, stakedFlpTracker.address])
 }
 
 main()

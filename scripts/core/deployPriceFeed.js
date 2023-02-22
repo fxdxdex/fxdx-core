@@ -49,8 +49,8 @@ async function deployPriceFeed() {
   const swapRouter = await contractAt("SwapRouter", addresses.swapRouter)
   const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
 
-  const fastPriceEvents = await contractAt("FastPriceEvents", addresses.fastPriceEvents)
-  // const fastPriceEvents = await deployContract("FastPriceEvents", [])
+  // const fastPriceEvents = await contractAt("FastPriceEvents", addresses.fastPriceEvents)
+  const fastPriceEvents = await deployContract("FastPriceEvents", [])
 
   // const chainlinkFlags = { address: "0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83" }
   const secondaryPriceFeed = await deployContract("FastPriceFeed", [
@@ -78,10 +78,10 @@ async function deployPriceFeed() {
   // const vaultPriceFeed = await deployContract("VaultPriceFeed", [])
   const vaultPriceFeed = await contractAt("VaultPriceFeed", addresses.vaultPriceFeed);
 
-  // await sendTxn(vaultPriceFeed.setMaxStrictPriceDeviation(expandDecimals(1, 28)), "vaultPriceFeed.setMaxStrictPriceDeviation") // 0.05 USD
-  // await sendTxn(vaultPriceFeed.setPriceSampleSpace(1), "vaultPriceFeed.setPriceSampleSpace")
+  await sendTxn(vaultPriceFeed.setMaxStrictPriceDeviation(expandDecimals(1, 28)), "vaultPriceFeed.setMaxStrictPriceDeviation") // 0.05 USD
+  await sendTxn(vaultPriceFeed.setPriceSampleSpace(1), "vaultPriceFeed.setPriceSampleSpace")
   await sendTxn(vaultPriceFeed.setSecondaryPriceFeed(secondaryPriceFeed.address), "vaultPriceFeed.setSecondaryPriceFeed")
-  // await sendTxn(vaultPriceFeed.setIsAmmEnabled(false), "vaultPriceFeed.setIsAmmEnabled")
+  await sendTxn(vaultPriceFeed.setIsAmmEnabled(false), "vaultPriceFeed.setIsAmmEnabled")
   // await sendTxn(vaultPriceFeed.setChainlinkFlags(chainlinkFlags.address), "vaultPriceFeed.setChainlinkFlags")
 
   for (const token of tokenArr) {

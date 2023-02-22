@@ -28,15 +28,15 @@ async function main() {
   await sendTxn(bonusFxdxTracker.setHandler(rewardRouter.address, false), "bonusFxdxTracker.setHandler(rewardRouter)")
   // allow rewardRouter to stake in feeFxdxTracker
   await sendTxn(feeFxdxTracker.setHandler(rewardRouter.address, false), "feeFxdxTracker.setHandler(rewardRouter)")
-  // allow feeFxdxTracker to stake bnFxdx
-  await sendTxn(bnFxdx.setHandler(feeFxdxTracker.address, false), "bnFxdx.setHandler(feeFxdxTracker")
+  // // allow feeFxdxTracker to stake bnFxdx
+  // await sendTxn(bnFxdx.setHandler(feeFxdxTracker.address, false), "bnFxdx.setHandler(feeFxdxTracker")
   // allow rewardRouter to burn bnFxdx
   await sendTxn(bnFxdx.setMinter(rewardRouter.address, false), "bnFxdx.setMinter(rewardRouter")
 
-  // allow stakedFlpTracker to stake feeFlpTracker
-  await sendTxn(feeFlpTracker.setHandler(stakedFlpTracker.address, false), "feeFlpTracker.setHandler(stakedFlpTracker)")
-  // allow feeFlpTracker to stake flp
-  await sendTxn(flp.setHandler(feeFlpTracker.address, false), "flp.setHandler(feeFlpTracker)")
+  // // allow stakedFlpTracker to stake feeFlpTracker
+  // await sendTxn(feeFlpTracker.setHandler(stakedFlpTracker.address, false), "feeFlpTracker.setHandler(stakedFlpTracker)")
+  // // allow feeFlpTracker to stake flp
+  // await sendTxn(flp.setHandler(feeFlpTracker.address, false), "flp.setHandler(feeFlpTracker)")
 
   // allow rewardRouter to stake in feeFlpTracker
   await sendTxn(feeFlpTracker.setHandler(rewardRouter.address, false), "feeFlpTracker.setHandler(rewardRouter)")
@@ -48,7 +48,7 @@ async function main() {
   await sendTxn(fxdxVester.setHandler(rewardRouter.address, false), "fxdxVester.setHandler(rewardRouter)")
   await sendTxn(flpVester.setHandler(rewardRouter.address, false), "flpVester.setHandler(rewardRouter)")
 
-  await sendTxn(feeFxdxTracker.setHandler(fxdxVester.address, false), "feeFxdxTracker.setHandler(fxdxVester)")
+  // await sendTxn(feeFxdxTracker.setHandler(fxdxVester.address, false), "feeFxdxTracker.setHandler(fxdxVester)")
 }
 
 main()
