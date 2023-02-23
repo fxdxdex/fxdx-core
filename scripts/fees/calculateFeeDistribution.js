@@ -39,9 +39,42 @@ function getGoerliValues() {
   }
 }
 
+function getOptimismGoerliValues() {
+  // update the following 3 BPS values according to your need.
+  // sum of the following 3 values should be equal to BASIS_POINTS_DIVISIOR
+  const MAINTENENCE_BPS = 100 // 1%
+  const DIRECT_POOL_BPS = 2900 // 29%
+  const REWARDS_BPS = 7000 // 70%
+
+  // replace the TOKEN_FEES values with the ones got by running withdrawFees script
+  const TOKEN_FEES = {
+    "btc": "0.024623647534469503",
+    "eth": "0.019363144301920062",
+    "usdc": "749.015592290254480132",
+    "usdt": "359.604975124378109419"
+  }
+
+  // replace WITHDRAW_TIMESTAMP value with the one printed by running withdrawFees script (-> Timestamp: )
+  const WITHDRAW_TIMESTAMP = 1677126750
+
+  // platform index tokens
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
+
+  return {
+    maintenanceBps: MAINTENENCE_BPS,
+    directPoolBps: DIRECT_POOL_BPS,
+    tokenFeesMap: TOKEN_FEES,
+    timestamp: WITHDRAW_TIMESTAMP,
+    tokenArr
+  }
+}
+
 function getValues() {
   if (network === "goerli") {
     return getGoerliValues()
+  } else if (network === "optimismGoerli") {
+    return getOptimismGoerliValues()
   }
 }
 

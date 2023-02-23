@@ -11,8 +11,8 @@ function getGoerliValues() {
   const DIRECT_POOL_AMOUNTS = {
     btc: "0.1",
     eth: "0",
+    usdc: "1000",
     usdt: "1000",
-    usdc: "1000"
   }
 
   // platform token array
@@ -25,9 +25,31 @@ function getGoerliValues() {
   }
 }
 
+function getOptimismGoerliValues() {
+  // replace DIRECT_POOL_AMOUNTS values with the ones got by running calculateFeeDistribution.js
+  // for the tokens that you don't want to do direct pool deposit, set "0" as their values.
+  const DIRECT_POOL_AMOUNTS = {
+    btc: "0.007140857784996155",
+    eth: "0.005615311847556817",
+    usdc: "104.285442786069651731",
+    usdt: "217.214521764173799238",
+  }
+
+  // platform token array
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [/*btc,*/ eth, usdc, usdt]
+
+  return {
+    directPoolAmounts: DIRECT_POOL_AMOUNTS,
+    tokenArr
+  }
+}
+
 function getValues() {
   if (network === "goerli") {
     return getGoerliValues()
+  } else if (network === "optimismGoerli") {
+    return getOptimismGoerliValues()
   }
 }
 
