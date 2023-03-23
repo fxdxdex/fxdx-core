@@ -37,9 +37,7 @@ describe("TokenManager", function () {
       tokenManager.address, // tokenManager
       user2.address, // mintReceiver
       user0.address, // flpManager
-      expandDecimals(1000, 18), // maxTokenSupply
-      10, // marginFeeBasisPoints
-      100 // maxMarginFeeBasisPoints
+      expandDecimals(1000, 18) // maxTokenSupply
     ])
 
     fxdxTimelock = await deployContract("FxdxTimelock", [

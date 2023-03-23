@@ -68,8 +68,20 @@ async function initVaultErrors(vault) {
   return vaultErrorController
 }
 
-async function initVaultUtils(vault) {
-  const vaultUtils = await deployContract("VaultUtils", [vault.address])
+async function initFeeUtils(vault) {
+  const feeUtils = await deployContract("FeeUtilsV1", [vault.address])
+  await feeUtils.initialize(
+    toUsd(5), // liquidationFeeUsd
+    600, // rolloverRateFactor
+    600 // stableRolloverRateFactor
+  )
+  await feeUtils.setFeeMultiplierIfInactive(1)
+  await vault.setFeeUtils(feeUtils.address)
+  return feeUtils
+}
+
+async function initVaultUtils(vault, feeUtils) {
+  const vaultUtils = await deployContract("VaultUtils", [vault.address, feeUtils.address])
   await vault.setVaultUtils(vaultUtils.address)
   return vaultUtils
 }
@@ -78,16 +90,14 @@ async function initVault(vault, router, usdf, priceFeed) {
   await vault.initialize(
     router.address, // router
     usdf.address, // usdf
-    priceFeed.address, // priceFeed
-    toUsd(5), // liquidationFeeUsd
-    600, // fundingRateFactor
-    600 // stableFundingRateFactor
+    priceFeed.address // priceFeed
   )
 
-  const vaultUtils = await initVaultUtils(vault)
+  const feeUtils = await initFeeUtils(vault)
+  const vaultUtils = await initVaultUtils(vault, feeUtils)
   const vaultErrorController = await initVaultErrors(vault)
 
-  return { vault, vaultUtils, vaultErrorController }
+  return { vault, feeUtils, vaultUtils, vaultErrorController }
 }
 
 async function validateVaultBalance(expect, vault, token, offset) {

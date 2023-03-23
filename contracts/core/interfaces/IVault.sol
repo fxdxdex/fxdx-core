@@ -3,6 +3,7 @@
 pragma solidity 0.6.12;
 
 import "./IVaultUtils.sol";
+import "./IFeeUtils.sol";
 
 interface IVault {
     function isInitialized() external view returns (bool);
@@ -10,18 +11,20 @@ interface IVault {
     function isLeverageEnabled() external view returns (bool);
 
     function setVaultUtils(IVaultUtils _vaultUtils) external;
+    function setFeeUtils(IFeeUtils _feeUtils) external;
     function setError(uint256 _errorCode, string calldata _error) external;
 
     function router() external view returns (address);
     function usdf() external view returns (address);
     function gov() external view returns (address);
 
+    function getVaultUtils() external view returns (address);
+    function getFeeUtils() external view returns (address);
+
     function whitelistedTokenCount() external view returns (uint256);
     function maxLeverage() external view returns (uint256);
 
     function minProfitTime() external view returns (uint256);
-    function hasDynamicFees() external view returns (bool);
-    function fundingInterval() external view returns (uint256);
     function totalTokenWeights() external view returns (uint256);
     function getTargetUsdfAmount(address _token) external view returns (uint256);
 
@@ -36,7 +39,6 @@ interface IVault {
 
     function minProfitBasisPoints(address _token) external view returns (uint256);
     function tokenBalances(address _token) external view returns (uint256);
-    function lastFundingTimes(address _token) external view returns (uint256);
 
     function setMaxLeverage(uint256 _maxLeverage) external;
     function setInManagerMode(bool _inManagerMode) external;
@@ -50,19 +52,7 @@ interface IVault {
     function setInPrivateLiquidationMode(bool _inPrivateLiquidationMode) external;
     function setLiquidator(address _liquidator, bool _isActive) external;
 
-    function setFundingRate(uint256 _fundingInterval, uint256 _fundingRateFactor, uint256 _stableFundingRateFactor) external;
-
-    function setFees(
-        uint256 _taxBasisPoints,
-        uint256 _stableTaxBasisPoints,
-        uint256 _mintBurnFeeBasisPoints,
-        uint256 _swapFeeBasisPoints,
-        uint256 _stableSwapFeeBasisPoints,
-        uint256 _marginFeeBasisPoints,
-        uint256 _liquidationFeeUsd,
-        uint256 _minProfitTime,
-        bool _hasDynamicFees
-    ) external;
+    function setMinProfitTime(uint256 _minProfitTime) external;
 
     function setTokenConfig(
         address _token,
@@ -87,19 +77,6 @@ interface IVault {
     function tokenToUsdMin(address _token, uint256 _tokenAmount) external view returns (uint256);
 
     function priceFeed() external view returns (address);
-    function fundingRateFactor() external view returns (uint256);
-    function stableFundingRateFactor() external view returns (uint256);
-    function cumulativeFundingRates(address _token) external view returns (uint256);
-    function getNextFundingRate(address _token) external view returns (uint256);
-    function getFeeBasisPoints(address _token, uint256 _usdfDelta, uint256 _feeBasisPoints, uint256 _taxBasisPoints, bool _increment) external view returns (uint256);
-
-    function liquidationFeeUsd() external view returns (uint256);
-    function taxBasisPoints() external view returns (uint256);
-    function stableTaxBasisPoints() external view returns (uint256);
-    function mintBurnFeeBasisPoints() external view returns (uint256);
-    function swapFeeBasisPoints() external view returns (uint256);
-    function stableSwapFeeBasisPoints() external view returns (uint256);
-    function marginFeeBasisPoints() external view returns (uint256);
 
     function allWhitelistedTokensLength() external view returns (uint256);
     function allWhitelistedTokens(uint256) external view returns (address);
@@ -123,5 +100,6 @@ interface IVault {
     function getMinPrice(address _token) external view returns (uint256);
 
     function getDelta(address _indexToken, uint256 _size, uint256 _averagePrice, bool _isLong, uint256 _lastIncreasedTime) external view returns (bool, uint256);
+    function getPositionDelta(address _account, address _collateralToken, address _indexToken, bool _isLong) external view returns (bool, uint256);
     function getPosition(address _account, address _collateralToken, address _indexToken, bool _isLong) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, bool, uint256);
 }

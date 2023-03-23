@@ -8,6 +8,9 @@ import "./interfaces/IHandlerTarget.sol";
 import "../access/interfaces/IAdmin.sol";
 import "../core/interfaces/IVault.sol";
 import "../core/interfaces/IVaultUtils.sol";
+import "../core/interfaces/IFeeUtils.sol";
+import "../core/interfaces/IFeeUtilsV1.sol";
+import "../core/interfaces/IFeeUtilsV2.sol";
 import "../core/interfaces/IVaultPriceFeed.sol";
 import "../core/interfaces/IRouter.sol";
 import "../tokens/interfaces/IYieldToken.sol";
@@ -25,7 +28,7 @@ contract FxdxTimelock is IFxdxTimelock {
     uint256 public constant PRICE_PRECISION = 10 ** 30;
     uint256 public constant MAX_BUFFER = 7 days;
     uint256 public constant MAX_FEE_BASIS_POINTS = 300; // 3%
-    uint256 public constant MAX_FUNDING_RATE_FACTOR = 200; // 0.02%
+    uint256 public constant MAX_ROLLOVER_RATE_FACTOR = 200; // 0.02%
     uint256 public constant MAX_LEVERAGE_VALIDATION = 500000; // 50x
 
     uint256 public buffer;
@@ -135,14 +138,25 @@ contract FxdxTimelock is IFxdxTimelock {
       IVault(_vault).setMaxLeverage(_maxLeverage);
     }
 
-    function setFundingRate(address _vault, uint256 _fundingInterval, uint256 _fundingRateFactor, uint256 _stableFundingRateFactor) external onlyAdmin {
-        require(_fundingRateFactor < MAX_FUNDING_RATE_FACTOR, "FxdxTimelock: invalid _fundingRateFactor");
-        require(_stableFundingRateFactor < MAX_FUNDING_RATE_FACTOR, "FxdxTimelock: invalid _stableFundingRateFactor");
-        IVault(_vault).setFundingRate(_fundingInterval, _fundingRateFactor, _stableFundingRateFactor);
+    function setRolloverRateV1(address _feeUtils, uint256 _rolloverInterval, uint256 _rolloverRateFactor, uint256 _stableRolloverRateFactor) external onlyAdmin {
+        require(_rolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "FxdxTimelock: invalid _rolloverRateFactor");
+        require(_stableRolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "FxdxTimelock: invalid _stableRolloverRateFactor");
+        IFeeUtilsV1(_feeUtils).setRolloverRate(_rolloverInterval, _rolloverRateFactor, _stableRolloverRateFactor);
     }
 
-    function setFees(
+    function setRolloverIntervalV2(address _feeUtils, uint256 _rolloverInterval) external onlyAdmin {
+        IFeeUtilsV2(_feeUtils).setRolloverInterval(_rolloverInterval);
+    }
+
+    function setFeeMinProfitTime(
         address _vault,
+        uint256 _minProfitTime
+    ) external onlyAdmin {
+        IVault(_vault).setMinProfitTime(_minProfitTime);
+    }
+
+    function setFeesV1(
+        address _feeUtils,
         uint256 _taxBasisPoints,
         uint256 _stableTaxBasisPoints,
         uint256 _mintBurnFeeBasisPoints,
@@ -150,7 +164,6 @@ contract FxdxTimelock is IFxdxTimelock {
         uint256 _stableSwapFeeBasisPoints,
         uint256 _marginFeeBasisPoints,
         uint256 _liquidationFeeUsd,
-        uint256 _minProfitTime,
         bool _hasDynamicFees
     ) external onlyAdmin {
         require(_taxBasisPoints < MAX_FEE_BASIS_POINTS, "FxdxTimelock: invalid _taxBasisPoints");
@@ -161,7 +174,7 @@ contract FxdxTimelock is IFxdxTimelock {
         require(_marginFeeBasisPoints < MAX_FEE_BASIS_POINTS, "FxdxTimelock: invalid _marginFeeBasisPoints");
         require(_liquidationFeeUsd < 10 * PRICE_PRECISION, "FxdxTimelock: invalid _liquidationFeeUsd");
 
-        IVault(_vault).setFees(
+        IFeeUtilsV1(_feeUtils).setFees(
             _taxBasisPoints,
             _stableTaxBasisPoints,
             _mintBurnFeeBasisPoints,
@@ -169,8 +182,39 @@ contract FxdxTimelock is IFxdxTimelock {
             _stableSwapFeeBasisPoints,
             _marginFeeBasisPoints,
             _liquidationFeeUsd,
-            _minProfitTime,
             _hasDynamicFees
+        );
+    }
+
+    function setLiquidationFeeUsdV2(address _feeUtils, uint256 _liquidationFeeUsd) external onlyAdmin {
+        IFeeUtilsV2(_feeUtils).setLiquidationFeeUsd(_liquidationFeeUsd);
+    }
+
+    function setHasDynamicFeesV2(address _feeUtils, bool _hasDynamicFees) external onlyAdmin {
+        IFeeUtilsV2(_feeUtils).setHasDynamicFees(_hasDynamicFees);
+    }
+
+    function setTokenFeeFactorsV2(
+        address _feeUtils,
+        address _token,
+        uint256 _taxBasisPoints,
+        uint256 _mintBurnFeeBasisPoints,
+        uint256 _swapFeeBasisPoints,
+        uint256 _rolloverRateFactor,
+        uint256[] memory _relativePnlList,
+        uint256[] memory _positionFeeBpsList,
+        uint256[] memory _profitFeeBpsList
+    ) external onlyAdmin {
+        require(_rolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "Timelock: invalid _rolloverRateFactor");
+        IFeeUtilsV2(_feeUtils).setTokenFeeFactors(
+            _token,
+            _taxBasisPoints,
+            _mintBurnFeeBasisPoints,
+            _swapFeeBasisPoints,
+            _rolloverRateFactor,
+            _relativePnlList,
+            _positionFeeBpsList,
+            _profitFeeBpsList
         );
     }
 

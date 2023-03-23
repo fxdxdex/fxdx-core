@@ -14,7 +14,7 @@ describe("PositionManager", function () {
   const provider = waffle.provider
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
-  let vaultUtils
+  let feeUtils
   let vaultPriceFeed
   let positionManager
   let usdf
@@ -50,7 +50,7 @@ describe("PositionManager", function () {
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
     const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
-    vaultUtils = initVaultResult.vaultUtils
+    feeUtils = initVaultResult.feeUtils
 
     distributor0 = await deployContract("TimeDistributor", [])
     yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
@@ -111,9 +111,7 @@ describe("PositionManager", function () {
         ethers.constants.AddressZero,
         ethers.constants.AddressZero,
         ethers.constants.AddressZero,
-        expandDecimals(1000, 18),
-        10,
-        100
+        expandDecimals(1000, 18)
       ])
     }
   })
@@ -206,6 +204,7 @@ describe("PositionManager", function () {
       .to.be.revertedWith("PositionManager: forbidden")
 
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
 
@@ -307,6 +306,7 @@ describe("PositionManager", function () {
       .to.be.revertedWith("PositionManager: forbidden")
 
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
 
@@ -388,6 +388,7 @@ describe("PositionManager", function () {
     const timelock = await deployTimelock()
 
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
@@ -411,6 +412,7 @@ describe("PositionManager", function () {
     const timelock = await deployTimelock()
 
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
@@ -438,6 +440,7 @@ describe("PositionManager", function () {
   it("decreasePositionAndSwap and decreasePositionAndSwapETH", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
 
@@ -532,6 +535,7 @@ describe("PositionManager", function () {
     const timelock = await deployTimelock()
 
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await router.addPlugin(positionManager.address)
     await router.connect(user0).approvePlugin(positionManager.address)
@@ -587,6 +591,7 @@ describe("PositionManager", function () {
   it("executeIncreaseOrder", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await timelock.setShouldToggleIsLeverageEnabled(true)
     await positionManager.setInLegacyMode(true)
@@ -682,6 +687,7 @@ describe("PositionManager", function () {
   it("executeDecreaseOrder", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await timelock.setShouldToggleIsLeverageEnabled(true)
     await positionManager.setInLegacyMode(true)
@@ -722,6 +728,7 @@ describe("PositionManager", function () {
   it("liquidatePosition", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(positionManager.address, true)
     await timelock.setShouldToggleIsLeverageEnabled(true)
 

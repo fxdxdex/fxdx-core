@@ -6,6 +6,7 @@ import "../libraries/token/IERC20.sol";
 import "../libraries/math/SafeMath.sol";
 
 import "../core/interfaces/IVault.sol";
+import "../core/interfaces/IFeeUtils.sol";
 import "../core/interfaces/IVaultPriceFeed.sol";
 import "../tokens/interfaces/IYieldTracker.sol";
 import "../tokens/interfaces/IYieldToken.sol";
@@ -78,14 +79,9 @@ contract Reader is Governable {
         {
             uint256 usdfAmount = _amountIn.mul(priceIn).div(PRICE_PRECISION);
             usdfAmount = usdfAmount.mul(10 ** USDF_DECIMALS).div(10 ** tokenInDecimals);
+            IFeeUtils feeUtils = IFeeUtils(_vault.getFeeUtils());
 
-            bool isStableSwap = _vault.stableTokens(_tokenIn) && _vault.stableTokens(_tokenOut);
-            uint256 baseBps = isStableSwap ? _vault.stableSwapFeeBasisPoints() : _vault.swapFeeBasisPoints();
-            uint256 taxBps = isStableSwap ? _vault.stableTaxBasisPoints() : _vault.taxBasisPoints();
-            uint256 feesBasisPoints0 = _vault.getFeeBasisPoints(_tokenIn, usdfAmount, baseBps, taxBps, true);
-            uint256 feesBasisPoints1 = _vault.getFeeBasisPoints(_tokenOut, usdfAmount, baseBps, taxBps, false);
-            // use the higher of the two fee basis points
-            feeBasisPoints = feesBasisPoints0 > feesBasisPoints1 ? feesBasisPoints0 : feesBasisPoints1;
+            feeBasisPoints = feeUtils.getSwapFeeBasisPoints(_tokenIn, _tokenOut, usdfAmount);
         }
 
         uint256 priceOut = _vault.getMaxPrice(_tokenOut);
@@ -96,24 +92,6 @@ contract Reader is Governable {
         uint256 feeAmount = amountOut.sub(amountOutAfterFees);
 
         return (amountOutAfterFees, feeAmount);
-    }
-
-    function getFeeBasisPoints(IVault _vault, address _tokenIn, address _tokenOut, uint256 _amountIn) public view returns (uint256, uint256, uint256) {
-        uint256 priceIn = _vault.getMinPrice(_tokenIn);
-        uint256 tokenInDecimals = _vault.tokenDecimals(_tokenIn);
-
-        uint256 usdfAmount = _amountIn.mul(priceIn).div(PRICE_PRECISION);
-        usdfAmount = usdfAmount.mul(10 ** USDF_DECIMALS).div(10 ** tokenInDecimals);
-
-        bool isStableSwap = _vault.stableTokens(_tokenIn) && _vault.stableTokens(_tokenOut);
-        uint256 baseBps = isStableSwap ? _vault.stableSwapFeeBasisPoints() : _vault.swapFeeBasisPoints();
-        uint256 taxBps = isStableSwap ? _vault.stableTaxBasisPoints() : _vault.taxBasisPoints();
-        uint256 feesBasisPoints0 = _vault.getFeeBasisPoints(_tokenIn, usdfAmount, baseBps, taxBps, true);
-        uint256 feesBasisPoints1 = _vault.getFeeBasisPoints(_tokenOut, usdfAmount, baseBps, taxBps, false);
-        // use the higher of the two fee basis points
-        uint256 feeBasisPoints = feesBasisPoints0 > feesBasisPoints1 ? feesBasisPoints0 : feesBasisPoints1;
-
-        return (feeBasisPoints, feesBasisPoints0, feesBasisPoints1);
     }
 
     function getFees(address _vault, address[] memory _tokens) public view returns (uint256[] memory) {
@@ -175,33 +153,11 @@ contract Reader is Governable {
         return amounts;
     }
 
-    function getFundingRates(address _vault, address _weth, address[] memory _tokens) public view returns (uint256[] memory) {
-        uint256 propsLength = 2;
-        uint256[] memory fundingRates = new uint256[](_tokens.length * propsLength);
+    function getRolloverRates(address _vault, address _weth, address[] memory _tokens) public view returns (uint256[] memory) {
         IVault vault = IVault(_vault);
+        IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
 
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            address token = _tokens[i];
-            if (token == address(0)) {
-                token = _weth;
-            }
-
-            uint256 fundingRateFactor = vault.stableTokens(token) ? vault.stableFundingRateFactor() : vault.fundingRateFactor();
-            uint256 reservedAmount = vault.reservedAmounts(token);
-            uint256 poolAmount = vault.poolAmounts(token);
-
-            if (poolAmount > 0) {
-                fundingRates[i * propsLength] = fundingRateFactor.mul(reservedAmount).div(poolAmount);
-            }
-
-            if (vault.cumulativeFundingRates(token) > 0) {
-                uint256 nextRate = vault.getNextFundingRate(token);
-                uint256 baseRate = vault.cumulativeFundingRates(token);
-                fundingRates[i * propsLength + 1] = baseRate.add(nextRate);
-            }
-        }
-
-        return fundingRates;
+        return feeUtils.getRolloverRates(_weth, _tokens);
     }
 
     function getTokenSupply(IERC20 _token, address[] memory _excludedAccounts) public view returns (uint256) {
@@ -368,7 +324,7 @@ contract Reader is Governable {
             (uint256 size,
              uint256 collateral,
              uint256 averagePrice,
-             uint256 entryFundingRate,
+             uint256 entryRolloverRate,
              /* reserveAmount */,
              uint256 realisedPnl,
              bool hasRealisedProfit,
@@ -377,7 +333,7 @@ contract Reader is Governable {
             amounts[i * POSITION_PROPS_LENGTH] = size;
             amounts[i * POSITION_PROPS_LENGTH + 1] = collateral;
             amounts[i * POSITION_PROPS_LENGTH + 2] = averagePrice;
-            amounts[i * POSITION_PROPS_LENGTH + 3] = entryFundingRate;
+            amounts[i * POSITION_PROPS_LENGTH + 3] = entryRolloverRate;
             amounts[i * POSITION_PROPS_LENGTH + 4] = hasRealisedProfit ? 1 : 0;
             amounts[i * POSITION_PROPS_LENGTH + 5] = realisedPnl;
             amounts[i * POSITION_PROPS_LENGTH + 6] = lastIncreasedTime;

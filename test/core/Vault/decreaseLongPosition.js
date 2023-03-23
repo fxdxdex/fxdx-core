@@ -43,7 +43,7 @@ describe("Vault.decreaseLongPosition", function () {
     router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    const { vaultUtils: _vaultUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
+    const { vaultUtils: _vaultUtils, feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
     vaultUtils = _vaultUtils
 
     distributor0 = await deployContract("TimeDistributor", [])
@@ -59,7 +59,8 @@ describe("Vault.decreaseLongPosition", function () {
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(dai.address, daiPriceFeed.address, 8, false)
 
-    await vault.setFees(
+    await vault.setMinProfitTime(60 * 60)
+    await feeUtils.setFees(
       50, // _taxBasisPoints
       20, // _stableTaxBasisPoints
       30, // _mintBurnFeeBasisPoints
@@ -67,7 +68,6 @@ describe("Vault.decreaseLongPosition", function () {
       4, // _stableSwapFeeBasisPoints
       10, // _marginFeeBasisPoints
       toUsd(5), // _liquidationFeeUsd
-      60 * 60, // _minProfitTime
       false // _hasDynamicFees
     )
 

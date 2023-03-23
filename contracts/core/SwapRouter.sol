@@ -335,7 +335,11 @@ contract SwapRouter is ISwapRouter, BaseRequestRouter {
     }
 
     function _vaultSwap(address _tokenIn, address _tokenOut, uint256 _minOut, address _receiver) internal returns (uint256) {
+        address timelock = IVault(vault).gov();
+        ITimelock(timelock).activateFeeUtils(vault);
         uint256 amountOut = IVault(vault).swap(_tokenIn, _tokenOut, _receiver);
+        ITimelock(timelock).deactivateFeeUtils(vault);
+
         require(amountOut >= _minOut, "SwapRouter: insufficient amountOut");
         return amountOut;
     }

@@ -8,6 +8,7 @@ import "./interfaces/IVault.sol";
 import "./interfaces/ILiquidityRouter.sol";
 
 import "../staking/interfaces/IRewardRouter.sol";
+import "../peripherals/interfaces/ITimelock.sol";
 import "./BaseRequestRouter.sol";
 
 contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
@@ -329,6 +330,9 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
         delete addLiquidityRequests[_key];
 
         IERC20(request.token).approve(IRewardRouter(rewardRouter).flpManager(), request.amountIn);
+
+        address timelock = IVault(vault).gov();
+        ITimelock(timelock).activateFeeUtils(vault);
         IRewardRouter(rewardRouter).mintAndStakeFlpForAccount(
             address(this),
             request.account,
@@ -337,6 +341,7 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
             request.minUsdf,
             request.minFlp
         );
+        ITimelock(timelock).deactivateFeeUtils(vault);
 
         _transferOutETH(request.executionFee, _executionFeeReceiver);
 
@@ -400,6 +405,8 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
 
         delete removeLiquidityRequests[_key];
 
+        address timelock = IVault(vault).gov();
+        ITimelock(timelock).activateFeeUtils(vault);
         uint256 amountOut = IRewardRouter(rewardRouter).unstakeAndRedeemFlpForAccount(
             request.account,
             request.tokenOut,
@@ -407,6 +414,7 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
             request.minOut,
             address(this)
         );
+        ITimelock(timelock).deactivateFeeUtils(vault);
 
         if (request.isETHOut) {
            _transferOutETHWithGasLimit(amountOut, payable(request.receiver));

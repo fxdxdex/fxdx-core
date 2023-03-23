@@ -5,6 +5,7 @@ const { expandDecimals, bigNumberify, getBlockTime, increaseTime,
   mineBlock, reportGasUsed, newWallet, getPriceBitArray, getPriceBits } = require("../shared/utilities")
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd, toNormalizedPrice } = require("../shared/units")
+const { initVault } = require("../core/Vault/helpers")
 
 use(solidity)
 
@@ -48,9 +49,7 @@ describe("FastPriceFeed", function () {
       AddressZero,
       tokenManager.address,
       mintReceiver.address,
-      expandDecimals(1000, 18),
-      10, // marginFeeBasisPoints 0.1%
-      500, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000, 18)
     ])
 
     usdf = await deployContract("USDF", [vault.address])
@@ -76,7 +75,10 @@ describe("FastPriceFeed", function () {
     await fastPriceFeed.initialize(2, [signer0.address, signer1.address], [updater0.address, updater1.address])
     await fastPriceEvents.setIsPriceFeed(fastPriceFeed.address, true)
 
+    const { feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
+
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)

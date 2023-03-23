@@ -26,9 +26,7 @@ describe("ReferralStorage", function () {
       rewardManager.address,
       tokenManager.address,
       mintReceiver.address,
-      expandDecimals(1000, 18),
-      50, // marginFeeBasisPoints 0.5%
-      500, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000, 18)
     ])
 
   })

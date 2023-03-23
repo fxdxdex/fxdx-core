@@ -1,7 +1,7 @@
 const { expect, use } = require("chai")
 const { solidity } = require("ethereum-waffle")
 const { deployContract } = require("../shared/fixtures")
-const { expandDecimals, getBlockTime, increaseTime, mineBlock, reportGasUsed, print, newWallet } = require("../shared/utilities")
+const { expandDecimals, increaseTime, mineBlock, reportGasUsed, newWallet } = require("../shared/utilities")
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd, toNormalizedPrice } = require("../shared/units")
 const { initVault, getBnbConfig, getBtcConfig, getDaiConfig, getEthConfig } = require("../core/Vault/helpers")
@@ -10,7 +10,7 @@ use(solidity)
 
 describe("RewardRouterV2", function () {
   const provider = waffle.provider
-  const [wallet, user0, user1, user2, user3, user4, tokenManager] = provider.getWallets()
+  const [wallet, user0, user1, user2, user3, user4, tokenManager, liquidityRouter] = provider.getWallets()
 
   const vestingDuration = 365 * 24 * 60 * 60
 
@@ -30,8 +30,6 @@ describe("RewardRouterV2", function () {
   let ethPriceFeed
   let dai
   let daiPriceFeed
-  let busd
-  let busdPriceFeed
 
   let fxdx
   let esFxdx
@@ -67,16 +65,13 @@ describe("RewardRouterV2", function () {
     dai = await deployContract("Token", [])
     daiPriceFeed = await deployContract("PriceFeed", [])
 
-    busd = await deployContract("Token", [])
-    busdPriceFeed = await deployContract("PriceFeed", [])
-
     vault = await deployContract("Vault", [])
     usdf = await deployContract("USDF", [vault.address])
     router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
     flp = await deployContract("FLP", [])
 
-    await initVault(vault, router, usdf, vaultPriceFeed)
+    const { feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
     flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
 
     timelock = await deployContract("Timelock", [
@@ -85,9 +80,7 @@ describe("RewardRouterV2", function () {
       tokenManager.address,
       tokenManager.address,
       flpManager.address,
-      expandDecimals(1000000, 18),
-      10,
-      100
+      expandDecimals(1000000, 18)
     ])
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
@@ -260,6 +253,10 @@ describe("RewardRouterV2", function () {
     await bnFxdx.setGov(timelock.address)
     await fxdxVester.setGov(timelock.address)
     await flpVester.setGov(timelock.address)
+
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
   })
 
   it("inits", async () => {
@@ -300,6 +297,24 @@ describe("RewardRouterV2", function () {
       fxdxVester.address,
       flpVester.address
     )).to.be.revertedWith("RewardRouter: already initialized")
+  })
+
+  it("setLiquidityRouter", async () => {
+    expect(await rewardRouter.isLiquidityRouter(liquidityRouter.address)).eq(true)
+
+    await expect(rewardRouter.connect(user0).setLiquidityRouter(
+      liquidityRouter.address,
+      false
+    )).to.be.revertedWith("Governable: forbidden")
+
+    expect(await rewardRouter.isLiquidityRouter(liquidityRouter.address)).eq(true);
+
+    await rewardRouter.setLiquidityRouter(liquidityRouter.address, false);
+    expect(await rewardRouter.isLiquidityRouter(liquidityRouter.address)).eq(false);
+
+    await rewardRouter.setLiquidityRouter(liquidityRouter.address, true);
+    expect(await rewardRouter.isLiquidityRouter(liquidityRouter.address)).eq(true);
+
   })
 
   it("stakeFxdxForAccount, stakeFxdx, stakeEsFxdx, unstakeFxdx, unstakeEsFxdx, claimEsFxdx, claimFees, compound, batchCompoundForAccounts", async () => {
@@ -493,19 +508,30 @@ describe("RewardRouterV2", function () {
       .to.be.revertedWith("RewardTracker: _amount exceeds depositBalance")
   })
 
-  it("mintAndStakeFlp, unstakeAndRedeemFlp, compound, batchCompoundForAccounts", async () => {
+  it("mintAndStakeFlpForAccount, unstakeAndRedeemFlpForAccount, compound, batchCompoundForAccounts", async () => {
     await eth.mint(feeFlpDistributor.address, expandDecimals(100, 18))
     await feeFlpDistributor.setTokensPerInterval("41335970000000") // 0.00004133597 ETH per second
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
-    const tx0 = await rewardRouter.connect(user1).mintAndStakeFlp(
+    await expect(rewardRouter.connect(user1).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
+      bnb.address,
+      expandDecimals(1, 18),
+      expandDecimals(299, 18),
+      expandDecimals(299, 18)
+    )).to.be.revertedWith("RewardRouter: forbidden")
+
+    const tx0 = await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
       expandDecimals(299, 18)
     )
-    await reportGasUsed(provider, tx0, "mintAndStakeFlp gas used")
+    await reportGasUsed(provider, tx0, "mintAndStakeFlpForAccount gas used")
 
     expect(await feeFlpTracker.stakedAmounts(user1.address)).eq(expandDecimals(2991, 17))
     expect(await feeFlpTracker.depositBalances(user1.address, flp.address)).eq(expandDecimals(2991, 17))
@@ -515,7 +541,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user1.address, expandDecimals(2, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(2, 18))
-    await rewardRouter.connect(user1).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(2, 18),
       expandDecimals(299, 18),
@@ -533,14 +561,25 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user2.address, expandDecimals(1, 18))
     await bnb.connect(user2).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouter.connect(user2).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user2.address,
+      user2.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
       expandDecimals(299, 18)
     )
 
-    await expect(rewardRouter.connect(user2).unstakeAndRedeemFlp(
+    await expect(rewardRouter.connect(user2).unstakeAndRedeemFlpForAccount(
+      user2.address,
+      bnb.address,
+      expandDecimals(299, 18),
+      "990000000000000000", // 0.99
+      user2.address
+    )).to.be.revertedWith("RewardRouter: forbidden")
+
+    await expect(rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user2.address,
       bnb.address,
       expandDecimals(299, 18),
       "990000000000000000", // 0.99
@@ -551,13 +590,14 @@ describe("RewardRouterV2", function () {
     expect(await stakedFlpTracker.stakedAmounts(user1.address)).eq("897300000000000000000")
     expect(await bnb.balanceOf(user1.address)).eq(0)
 
-    const tx1 = await rewardRouter.connect(user1).unstakeAndRedeemFlp(
+    const tx1 = await rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user1.address,
       bnb.address,
       expandDecimals(299, 18),
       "990000000000000000", // 0.99
       user1.address
     )
-    await reportGasUsed(provider, tx1, "unstakeAndRedeemFlp gas used")
+    await reportGasUsed(provider, tx1, "unstakeAndRedeemFlpForAccount gas used")
 
     expect(await feeFlpTracker.stakedAmounts(user1.address)).eq("598300000000000000000") // 598.3
     expect(await stakedFlpTracker.stakedAmounts(user1.address)).eq("598300000000000000000")
@@ -627,49 +667,6 @@ describe("RewardRouterV2", function () {
     expect(await feeFlpTracker.stakedAmounts(user1.address)).eq("598300000000000000000") // 598.3
     expect(await stakedFlpTracker.stakedAmounts(user1.address)).eq("598300000000000000000")
     expect(await bnb.balanceOf(user1.address)).eq("993676666666666666") // ~0.99
-  })
-
-  it("mintAndStakeFlpETH, unstakeAndRedeemFlpETH", async () => {
-    const receiver0 = newWallet()
-    await expect(rewardRouter.connect(user0).mintAndStakeFlpETH(expandDecimals(300, 18), expandDecimals(300, 18), { value: 0 }))
-      .to.be.revertedWith("RewardRouter: invalid msg.value")
-
-    await expect(rewardRouter.connect(user0).mintAndStakeFlpETH(expandDecimals(300, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("FlpManager: insufficient USDF output")
-
-    await expect(rewardRouter.connect(user0).mintAndStakeFlpETH(expandDecimals(299, 18), expandDecimals(300, 18), { value: expandDecimals(1, 18) }))
-      .to.be.revertedWith("FlpManager: insufficient FLP output")
-
-    expect(await bnb.balanceOf(user0.address)).eq(0)
-    expect(await bnb.balanceOf(vault.address)).eq(0)
-    expect(await bnb.totalSupply()).eq(0)
-    expect(await provider.getBalance(bnb.address)).eq(0)
-    expect(await stakedFlpTracker.balanceOf(user0.address)).eq(0)
-
-    await rewardRouter.connect(user0).mintAndStakeFlpETH(expandDecimals(299, 18), expandDecimals(299, 18), { value: expandDecimals(1, 18) })
-
-    expect(await bnb.balanceOf(user0.address)).eq(0)
-    expect(await bnb.balanceOf(vault.address)).eq(expandDecimals(1, 18))
-    expect(await provider.getBalance(bnb.address)).eq(expandDecimals(1, 18))
-    expect(await bnb.totalSupply()).eq(expandDecimals(1, 18))
-    expect(await stakedFlpTracker.balanceOf(user0.address)).eq("299100000000000000000") // 299.1
-
-    await expect(rewardRouter.connect(user0).unstakeAndRedeemFlpETH(expandDecimals(300, 18), expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount")
-
-    await expect(rewardRouter.connect(user0).unstakeAndRedeemFlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("FlpManager: cooldown duration not yet passed")
-
-    await increaseTime(provider, 24 * 60 * 60 + 10)
-
-    await expect(rewardRouter.connect(user0).unstakeAndRedeemFlpETH("299100000000000000000", expandDecimals(1, 18), receiver0.address))
-      .to.be.revertedWith("FlpManager: insufficient output")
-
-    await rewardRouter.connect(user0).unstakeAndRedeemFlpETH("299100000000000000000", "990000000000000000", receiver0.address)
-    expect(await provider.getBalance(receiver0.address)).eq("994009000000000000") // 0.994009
-    expect(await bnb.balanceOf(vault.address)).eq("5991000000000000") // 0.005991
-    expect(await provider.getBalance(bnb.address)).eq("5991000000000000")
-    expect(await bnb.totalSupply()).eq("5991000000000000")
   })
 
   it("fxdx: signalTransfer, acceptTransfer", async () =>{
@@ -790,7 +787,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouter.connect(user1).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
@@ -799,7 +798,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user2.address, expandDecimals(1, 18))
     await bnb.connect(user2).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouter.connect(user2).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user2.address,
+      user2.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
@@ -989,7 +990,8 @@ describe("RewardRouterV2", function () {
 
     expect(await fxdx.balanceOf(user3.address)).eq(0)
 
-    await expect(rewardRouter.connect(user3).unstakeAndRedeemFlp(
+    await expect(rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user3.address,
       bnb.address,
       expandDecimals(1, 18),
       0,
@@ -1213,6 +1215,9 @@ describe("RewardRouterV2", function () {
       flpVester.address
     )
 
+    await timelock.setContractHandler(rewardRouterV2.address, true)
+    await rewardRouterV2.setLiquidityRouter(liquidityRouter.address, true)
+
     await timelock.signalSetGov(flpManager.address, timelockV2.address)
     await timelock.signalSetGov(stakedFxdxTracker.address, timelockV2.address)
     await timelock.signalSetGov(bonusFxdxTracker.address, timelockV2.address)
@@ -1282,7 +1287,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouterV2.connect(user1).mintAndStakeFlp(
+    await rewardRouterV2.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
@@ -1455,7 +1462,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouter.connect(user1).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
@@ -1564,7 +1573,8 @@ describe("RewardRouterV2", function () {
 
     expect(await bnb.balanceOf(user1.address)).eq(0)
 
-    await rewardRouter.connect(user1).unstakeAndRedeemFlp(
+    await rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user1.address,
       bnb.address,
       expandDecimals(2500, 17),
       "830000000000000000", // 0.83
@@ -1577,7 +1587,8 @@ describe("RewardRouterV2", function () {
 
     expect(await bnb.balanceOf(user3.address)).eq("0")
 
-    await rewardRouter.connect(user3).unstakeAndRedeemFlp(
+    await rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user3.address,
       bnb.address,
       expandDecimals(491, 17),
       "160000000000000000", // 0.16
@@ -1593,7 +1604,9 @@ describe("RewardRouterV2", function () {
 
     await bnb.mint(user1.address, expandDecimals(1, 18))
     await bnb.connect(user1).approve(flpManager.address, expandDecimals(1, 18))
-    await rewardRouter.connect(user1).mintAndStakeFlp(
+    await rewardRouter.connect(liquidityRouter).mintAndStakeFlpForAccount(
+      user1.address,
+      user1.address,
       bnb.address,
       expandDecimals(1, 18),
       expandDecimals(299, 18),
@@ -1657,7 +1670,8 @@ describe("RewardRouterV2", function () {
     expect(await stakedFlpTracker.depositBalances(user3.address, feeFlpTracker.address)).eq(0)
     expect(await stakedFlpTracker.balanceOf(user3.address)).eq(expandDecimals(2991, 17))
 
-    await expect(rewardRouter.connect(user1).unstakeAndRedeemFlp(
+    await expect(rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user1.address,
       bnb.address,
       expandDecimals(2991, 17),
       "0",
@@ -1673,7 +1687,8 @@ describe("RewardRouterV2", function () {
 
     expect(await bnb.balanceOf(user1.address)).eq(0)
 
-    await rewardRouter.connect(user1).unstakeAndRedeemFlp(
+    await rewardRouter.connect(liquidityRouter).unstakeAndRedeemFlpForAccount(
+      user1.address,
       bnb.address,
       expandDecimals(2991, 17),
       "0",

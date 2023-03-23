@@ -212,7 +212,7 @@ contract PositionManager is BasePositionManager {
     }
 
     function executeIncreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
-        uint256 sizeDelta =  _validateIncreaseOrder(_account, _orderIndex);
+        (uint256 sizeDelta, address _indexToken) =  _validateIncreaseOrder(_account, _orderIndex);
 
         address _vault = vault;
         address timelock = IVault(_vault).gov();
@@ -221,7 +221,7 @@ contract PositionManager is BasePositionManager {
         IOrderBook(orderBook).executeIncreaseOrder(_account, _orderIndex, _feeReceiver);
         ITimelock(timelock).disableLeverage(_vault);
 
-        _emitIncreasePositionReferral(_account, sizeDelta);
+        _emitIncreasePositionReferral(_account, _indexToken, sizeDelta);
     }
 
     function executeDecreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
@@ -231,7 +231,7 @@ contract PositionManager is BasePositionManager {
         (
             , // _collateralToken
             , // _collateralDelta
-            , // _indexToken
+            address _indexToken,
             uint256 _sizeDelta,
             , // _isLong
             , // triggerPrice
@@ -243,10 +243,10 @@ contract PositionManager is BasePositionManager {
         IOrderBook(orderBook).executeDecreaseOrder(_account, _orderIndex, _feeReceiver);
         ITimelock(timelock).disableLeverage(_vault);
 
-        _emitDecreasePositionReferral(_account, _sizeDelta);
+        _emitDecreasePositionReferral(_account, _indexToken, _sizeDelta);
     }
 
-    function _validateIncreaseOrder(address _account, uint256 _orderIndex) internal view returns (uint256) {
+    function _validateIncreaseOrder(address _account, uint256 _orderIndex) internal view returns (uint256, address) {
         (
             address _purchaseToken,
             uint256 _purchaseTokenAmount,
@@ -259,10 +259,10 @@ contract PositionManager is BasePositionManager {
             // executionFee
         ) = IOrderBook(orderBook).getIncreaseOrder(_account, _orderIndex);
 
-        if (!shouldValidateIncreaseOrder) { return _sizeDelta; }
+        if (!shouldValidateIncreaseOrder) { return (_sizeDelta, _indexToken); }
 
         // shorts are okay
-        if (!_isLong) { return _sizeDelta; }
+        if (!_isLong) { return (_sizeDelta, _indexToken); }
 
         // if the position size is not increasing, this is a collateral deposit
         require(_sizeDelta > 0, "PositionManager: long deposit");
@@ -271,7 +271,7 @@ contract PositionManager is BasePositionManager {
         (uint256 size, uint256 collateral, , , , , , ) = _vault.getPosition(_account, _collateralToken, _indexToken, _isLong);
 
         // if there is no existing position, do not charge a fee
-        if (size == 0) { return _sizeDelta; }
+        if (size == 0) { return (_sizeDelta, _indexToken); }
 
         uint256 nextSize = size.add(_sizeDelta);
         uint256 collateralDelta = _vault.tokenToUsdMin(_purchaseToken, _purchaseTokenAmount);
@@ -283,6 +283,6 @@ contract PositionManager is BasePositionManager {
 
         require(nextLeverageWithBuffer >= prevLeverage, "PositionManager: long leverage decrease");
 
-        return _sizeDelta;
+        return (_sizeDelta, _indexToken);
     }
 }

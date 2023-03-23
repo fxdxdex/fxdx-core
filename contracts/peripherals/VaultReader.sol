@@ -117,30 +117,21 @@ contract VaultReader {
     ) {
         IVault vault = IVault(_vault);
 
-        address[] memory addressValues = new address[](2);
-        uint256[] memory intValues = new uint256[](13 + _tokens.length * 7);
-        bool[] memory boolValues = new bool[](3 + _tokens.length * 2);
+        address[] memory addressValues = new address[](4);
+        uint256[] memory intValues = new uint256[](3 + _tokens.length * 7);
+        bool[] memory boolValues = new bool[](2 + _tokens.length * 2);
 
         addressValues[0] = vault.priceFeed();
         addressValues[1] = vault.gov();
+        addressValues[2] = vault.getVaultUtils();
+        addressValues[3] = vault.getFeeUtils();
 
         boolValues[0] = vault.isSwapEnabled();
-        boolValues[1] = vault.hasDynamicFees();
-        boolValues[2] = vault.inPrivateLiquidationMode();
+        boolValues[1] = vault.inPrivateLiquidationMode();
 
         intValues[0] = vault.maxLeverage();
-        intValues[1] = vault.liquidationFeeUsd();
-        intValues[2] = vault.taxBasisPoints();
-        intValues[3] = vault.stableTaxBasisPoints();
-        intValues[4] = vault.mintBurnFeeBasisPoints();
-        intValues[5] = vault.swapFeeBasisPoints();
-        intValues[6] = vault.stableSwapFeeBasisPoints();
-        intValues[7] = vault.marginFeeBasisPoints();
-        intValues[8] = vault.minProfitTime();
-        intValues[9] = vault.fundingInterval();
-        intValues[10] = vault.fundingRateFactor();
-        intValues[11] = vault.stableFundingRateFactor();
-        intValues[12] = vault.maxGasPrice();
+        intValues[1] = vault.minProfitTime();
+        intValues[2] = vault.maxGasPrice();
 
         uint256 intValuesLength = 7;
         uint256 boolValuesLength = 2;

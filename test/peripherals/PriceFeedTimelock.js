@@ -77,9 +77,7 @@ describe("PriceFeedTimelock", function () {
       tokenManager.address, // tokenManager
       mintReceiver.address, // mintReceiver
       flpManager.address, // flpManager
-      expandDecimals(1000, 18), // maxTokenSupply
-      50, // marginFeeBasisPoints 0.5%
-      500, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000, 18) // maxTokenSupply
     ])
     await vault.setGov(vaultTimelock.address)
 
@@ -165,9 +163,7 @@ describe("PriceFeedTimelock", function () {
       rewardManager.address,
       tokenManager.address,
       mintReceiver.address,
-      1000,
-      10,
-      100
+      1000
     ])
     await expect(timelock0.connect(user0).setBuffer(3 * 24 * 60 * 60 - 10))
       .to.be.revertedWith("Timelock: forbidden")

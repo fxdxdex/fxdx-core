@@ -64,9 +64,7 @@ describe("SwapRouter", function () {
       AddressZero,
       tokenManager.address,
       mintReceiver.address,
-      expandDecimals(1000, 18),
-      10, // marginFeeBasisPoints 0.1%
-      500, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000, 18)
     ])
 
     usdf = await deployContract("USDF", [vault.address])
@@ -77,7 +75,7 @@ describe("SwapRouter", function () {
     await positionRouter.setReferralStorage(referralStorage.address)
     await referralStorage.setHandler(positionRouter.address, true)
 
-    await initVault(vault, router, usdf, vaultPriceFeed)
+    const { feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
     yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
@@ -106,6 +104,7 @@ describe("SwapRouter", function () {
 
     await vault.setIsLeverageEnabled(false)
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
 
     const rewardRouter = await deployContract("RewardRouterV2", [])
     swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
@@ -128,6 +127,8 @@ describe("SwapRouter", function () {
 
     await fastPriceFeed.setVaultPriceFeed(vaultPriceFeed.address)
     await vaultPriceFeed.setSecondaryPriceFeed(fastPriceFeed.address)
+
+    await timelock.setContractHandler(swapRouter.address, true)
   })
 
   it("inits", async () => {

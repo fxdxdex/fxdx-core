@@ -15,6 +15,7 @@ describe("PositionRouter", function () {
   const depositFee = 50
   const minExecutionFee = 4000
   let vault
+  let feeUtils
   let timelock
   let usdf
   let router
@@ -63,9 +64,7 @@ describe("PositionRouter", function () {
       AddressZero,
       tokenManager.address,
       mintReceiver.address,
-      expandDecimals(1000, 18),
-      10, // marginFeeBasisPoints 0.1%
-      500, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000, 18)
     ])
 
     usdf = await deployContract("USDF", [vault.address])
@@ -76,7 +75,8 @@ describe("PositionRouter", function () {
     await positionRouter.setReferralStorage(referralStorage.address)
     await referralStorage.setHandler(positionRouter.address, true)
 
-    await initVault(vault, router, usdf, vaultPriceFeed)
+    const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    feeUtils = initVaultResult.feeUtils
 
     distributor0 = await deployContract("TimeDistributor", [])
     yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
@@ -105,6 +105,7 @@ describe("PositionRouter", function () {
 
     await vault.setIsLeverageEnabled(false)
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
 
     const rewardRouter = await deployContract("RewardRouterV2", [])
     swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])

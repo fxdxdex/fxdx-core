@@ -1,15 +1,11 @@
-const { getFrameSigner, deployContract, contractAt , sendTxn } = require("../shared/helpers")
+const { deployContract, contractAt , sendTxn } = require("../shared/helpers")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
 const addresses = require('./addresses')[network];
 
 async function deploy() {
-  // const signer = await getFrameSigner()
-
   const vault = await contractAt("Vault", addresses.vault)
-  // const timelock = await contractAt("Timelock", await vault.gov(), signer)
-  // const router = await contractAt("Router", addresses.router, signer)
   // const timelock = await contractAt("Timelock", await vault.gov())
   const router = await contractAt("Router", addresses.router)
   const weth = await contractAt("WETH", tokens.nativeToken.address)

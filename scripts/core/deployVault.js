@@ -7,7 +7,8 @@ const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const tokens = require('./tokens')[network];
 
 async function main() {
-  const { nativeToken } = tokens
+  const { nativeToken, btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt];
 
   const vault = await deployContract("Vault", [])
   // const vault = await contractAt("Vault", addresses.vault)
@@ -34,34 +35,45 @@ async function main() {
   await sendTxn(vault.initialize(
     router.address, // router
     usdf.address, // usdf
-    vaultPriceFeed.address, // priceFeed
-    toUsd(2), // liquidationFeeUsd
-    100, // fundingRateFactor
-    100 // stableFundingRateFactor
+    vaultPriceFeed.address // priceFeed
   ), "vault.initialize")
-
-  await sendTxn(vault.setFundingRate(60 * 60, 100, 100), "vault.setFundingRate")
 
   await sendTxn(vault.setInManagerMode(true), "vault.setInManagerMode")
   await sendTxn(vault.setManager(flpManager.address, true), "vault.setManager")
 
-  await sendTxn(vault.setFees(
-    10, // _taxBasisPoints
-    5, // _stableTaxBasisPoints
-    20, // _mintBurnFeeBasisPoints
-    20, // _swapFeeBasisPoints
-    1, // _stableSwapFeeBasisPoints
-    10, // _marginFeeBasisPoints
-    toUsd(2), // _liquidationFeeUsd
+  await sendTxn(vault.setMinProfitTime(
     24 * 60 * 60, // _minProfitTime
-    true // _hasDynamicFees
-  ), "vault.setFees")
+  ), "vault.setMinProfitTime")
+
+  const feeUtilsV2 = await deployContract("FeeUtilsV2", [vault.address])
+
+  await sendTxn(feeUtilsV2.initialize(
+    toUsd(2), // liquidationFeeUsd
+    true // hasDynamicFees
+  ), "feeUtilsV2.initialize")
+
+  await sendTxn(feeUtilsV2.setRolloverInterval(60 * 60), "feeUtilsV2.setRolloverInterval")
+
+  for (const token of tokenArr) {
+    await sendTxn(feeUtilsV2.setTokenFeeFactors(
+      token.address,
+      token.taxBasisPoints,
+      token.mintBurnFeeBasisPoints,
+      token.swapFeeBasisPoints,
+      token.rolloverFeeFactor,
+      token.relativePnlList,
+      token.positionFeeBpsList,
+      token.profitFeeBpsList
+    ), `feeUtilsV2.setTokenFeeFactors - (${token.name})`)
+  }
+
+  await sendTxn(vault.setFeeUtils(feeUtilsV2.address), "vault.setFeeUtils")
 
   const vaultErrorController = await deployContract("VaultErrorController", [])
   await sendTxn(vault.setErrorController(vaultErrorController.address), "vault.setErrorController")
   await sendTxn(vaultErrorController.setErrors(vault.address, errors), "vaultErrorController.setErrors")
 
-  const vaultUtils = await deployContract("VaultUtils", [vault.address])
+  const vaultUtils = await deployContract("VaultUtils", [vault.address, feeUtilsV2.address])
   await sendTxn(vault.setVaultUtils(vaultUtils.address), "vault.setVaultUtils")
 }
 

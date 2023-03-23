@@ -182,9 +182,7 @@ describe("Vault.withdrawFees", function () {
       user0.address,
       user1.address,
       user2.address,
-      expandDecimals(1000, 18),
-      10,
-      100
+      expandDecimals(1000, 18)
     ])
     await vault.setGov(timelock.address)
 
@@ -262,9 +260,7 @@ describe("Vault.withdrawFees", function () {
       user0.address,
       user1.address,
       user2.address,
-      expandDecimals(1000, 18),
-      10,
-      100
+      expandDecimals(1000, 18)
     ])
     await vault.setGov(timelock.address)
 

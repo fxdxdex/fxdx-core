@@ -12,6 +12,7 @@ describe("Vault.increaseShortPosition", function () {
   const provider = waffle.provider
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
+  let feeUtils
   let flpManager
   let vaultPriceFeed
   let flp
@@ -43,6 +44,7 @@ describe("Vault.increaseShortPosition", function () {
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
     const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    feeUtils = initVaultResult.feeUtils
     flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 24 * 60 * 60])
 
     distributor0 = await deployContract("TimeDistributor", [])
@@ -144,7 +146,8 @@ describe("Vault.increaseShortPosition", function () {
     expect(await flpManager.getAumInUsdf(true)).eq(0)
     expect(await flpManager.getAumInUsdf(false)).eq(0)
 
-    await vault.setFees(
+    await vault.setMinProfitTime(0)
+    await feeUtils.setFees(
       50, // _taxBasisPoints
       10, // _stableTaxBasisPoints
       4, // _mintBurnFeeBasisPoints
@@ -152,7 +155,6 @@ describe("Vault.increaseShortPosition", function () {
       4, // _stableSwapFeeBasisPoints
       10, // _marginFeeBasisPoints
       toUsd(5), // _liquidationFeeUsd
-      0, // _minProfitTime
       false // _hasDynamicFees
     )
 

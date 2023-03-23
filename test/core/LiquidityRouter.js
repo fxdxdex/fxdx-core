@@ -92,7 +92,7 @@ describe("LiquidityRouter", function () {
     await referralStorage.setHandler(positionRouter.address, true)
     flp = await deployContract("FLP", [])
 
-    await initVault(vault, router, usdf, vaultPriceFeed)
+    const { feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
     flpManager = await deployContract("FlpManager", [vault.address, usdf.address, flp.address, 5])
 
     timelock = await deployContract("Timelock", [
@@ -101,9 +101,7 @@ describe("LiquidityRouter", function () {
       tokenManager.address,
       tokenManager.address,
       flpManager.address,
-      expandDecimals(1000000, 18),
-      10, // marginFeeBasisPoints 0.1%
-      100, // maxMarginFeeBasisPoints 5%
+      expandDecimals(1000000, 18)
     ])
 
     distributor0 = await deployContract("TimeDistributor", [])
@@ -290,6 +288,9 @@ describe("LiquidityRouter", function () {
 
     swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
     liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
+
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(liquidityRouter.address, true)
 
     fastPriceEvents = await deployContract("FastPriceEvents", [])
     fastPriceFeed = await deployContract("FastPriceFeed", [

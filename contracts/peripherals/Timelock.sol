@@ -8,6 +8,8 @@ import "./interfaces/IHandlerTarget.sol";
 import "../access/interfaces/IAdmin.sol";
 import "../core/interfaces/IVault.sol";
 import "../core/interfaces/IVaultUtils.sol";
+import "../core/interfaces/IFeeUtilsV1.sol";
+import "../core/interfaces/IFeeUtilsV2.sol";
 import "../core/interfaces/IFlpManager.sol";
 import "../referrals/interfaces/IReferralStorage.sol";
 import "../tokens/interfaces/IYieldToken.sol";
@@ -24,7 +26,7 @@ contract Timelock is ITimelock {
 
     uint256 public constant PRICE_PRECISION = 10 ** 30;
     uint256 public constant MAX_BUFFER = 5 days;
-    uint256 public constant MAX_FUNDING_RATE_FACTOR = 200; // 0.02%
+    uint256 public constant MAX_ROLLOVER_RATE_FACTOR = 200; // 0.02%
     uint256 public constant MAX_LEVERAGE_VALIDATION = 500000; // 50x
 
     uint256 public buffer;
@@ -35,8 +37,6 @@ contract Timelock is ITimelock {
     address public flpManager;
     uint256 public maxTokenSupply;
 
-    uint256 public marginFeeBasisPoints;
-    uint256 public maxMarginFeeBasisPoints;
     bool public shouldToggleIsLeverageEnabled;
 
     mapping (bytes32 => uint256) public pendingActions;
@@ -91,9 +91,7 @@ contract Timelock is ITimelock {
         address _tokenManager,
         address _mintReceiver,
         address _flpManager,
-        uint256 _maxTokenSupply,
-        uint256 _marginFeeBasisPoints,
-        uint256 _maxMarginFeeBasisPoints
+        uint256 _maxTokenSupply
     ) public {
         require(_buffer <= MAX_BUFFER, "Timelock: invalid _buffer");
         admin = _admin;
@@ -102,9 +100,6 @@ contract Timelock is ITimelock {
         mintReceiver = _mintReceiver;
         flpManager = _flpManager;
         maxTokenSupply = _maxTokenSupply;
-
-        marginFeeBasisPoints = _marginFeeBasisPoints;
-        maxMarginFeeBasisPoints = _maxMarginFeeBasisPoints;
     }
 
     function setAdmin(address _admin) external override onlyTokenManager {
@@ -130,77 +125,8 @@ contract Timelock is ITimelock {
         buffer = _buffer;
     }
 
-    function setMaxLeverage(address _vault, uint256 _maxLeverage) external onlyAdmin {
-      require(_maxLeverage > MAX_LEVERAGE_VALIDATION, "Timelock: invalid _maxLeverage");
-      IVault(_vault).setMaxLeverage(_maxLeverage);
-    }
-
-    function setFundingRate(address _vault, uint256 _fundingInterval, uint256 _fundingRateFactor, uint256 _stableFundingRateFactor) external onlyKeeperAndAbove {
-        require(_fundingRateFactor < MAX_FUNDING_RATE_FACTOR, "Timelock: invalid _fundingRateFactor");
-        require(_stableFundingRateFactor < MAX_FUNDING_RATE_FACTOR, "Timelock: invalid _stableFundingRateFactor");
-        IVault(_vault).setFundingRate(_fundingInterval, _fundingRateFactor, _stableFundingRateFactor);
-    }
-
     function setShouldToggleIsLeverageEnabled(bool _shouldToggleIsLeverageEnabled) external onlyHandlerAndAbove {
         shouldToggleIsLeverageEnabled = _shouldToggleIsLeverageEnabled;
-    }
-
-    function setMarginFeeBasisPoints(uint256 _marginFeeBasisPoints, uint256 _maxMarginFeeBasisPoints) external onlyHandlerAndAbove {
-        marginFeeBasisPoints = _marginFeeBasisPoints;
-        maxMarginFeeBasisPoints = _maxMarginFeeBasisPoints;
-    }
-
-    function setSwapFees(
-        address _vault,
-        uint256 _taxBasisPoints,
-        uint256 _stableTaxBasisPoints,
-        uint256 _mintBurnFeeBasisPoints,
-        uint256 _swapFeeBasisPoints,
-        uint256 _stableSwapFeeBasisPoints
-    ) external onlyKeeperAndAbove {
-        IVault vault = IVault(_vault);
-
-        vault.setFees(
-            _taxBasisPoints,
-            _stableTaxBasisPoints,
-            _mintBurnFeeBasisPoints,
-            _swapFeeBasisPoints,
-            _stableSwapFeeBasisPoints,
-            maxMarginFeeBasisPoints,
-            vault.liquidationFeeUsd(),
-            vault.minProfitTime(),
-            vault.hasDynamicFees()
-        );
-    }
-
-    // assign _marginFeeBasisPoints to this.marginFeeBasisPoints
-    // because enableLeverage would update Vault.marginFeeBasisPoints to this.marginFeeBasisPoints
-    // and disableLeverage would reset the Vault.marginFeeBasisPoints to this.maxMarginFeeBasisPoints
-    function setFees(
-        address _vault,
-        uint256 _taxBasisPoints,
-        uint256 _stableTaxBasisPoints,
-        uint256 _mintBurnFeeBasisPoints,
-        uint256 _swapFeeBasisPoints,
-        uint256 _stableSwapFeeBasisPoints,
-        uint256 _marginFeeBasisPoints,
-        uint256 _liquidationFeeUsd,
-        uint256 _minProfitTime,
-        bool _hasDynamicFees
-    ) external onlyKeeperAndAbove {
-        marginFeeBasisPoints = _marginFeeBasisPoints;
-
-        IVault(_vault).setFees(
-            _taxBasisPoints,
-            _stableTaxBasisPoints,
-            _mintBurnFeeBasisPoints,
-            _swapFeeBasisPoints,
-            _stableSwapFeeBasisPoints,
-            maxMarginFeeBasisPoints,
-            _liquidationFeeUsd,
-            _minProfitTime,
-            _hasDynamicFees
-        );
     }
 
     function enableLeverage(address _vault) external override onlyHandlerAndAbove {
@@ -210,17 +136,9 @@ contract Timelock is ITimelock {
             vault.setIsLeverageEnabled(true);
         }
 
-        vault.setFees(
-            vault.taxBasisPoints(),
-            vault.stableTaxBasisPoints(),
-            vault.mintBurnFeeBasisPoints(),
-            vault.swapFeeBasisPoints(),
-            vault.stableSwapFeeBasisPoints(),
-            marginFeeBasisPoints,
-            vault.liquidationFeeUsd(),
-            vault.minProfitTime(),
-            vault.hasDynamicFees()
-        );
+        IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
+
+        feeUtils.setIsActive(true);
     }
 
     function disableLeverage(address _vault) external override onlyHandlerAndAbove {
@@ -230,17 +148,108 @@ contract Timelock is ITimelock {
             vault.setIsLeverageEnabled(false);
         }
 
-        vault.setFees(
-            vault.taxBasisPoints(),
-            vault.stableTaxBasisPoints(),
-            vault.mintBurnFeeBasisPoints(),
-            vault.swapFeeBasisPoints(),
-            vault.stableSwapFeeBasisPoints(),
-            maxMarginFeeBasisPoints, // marginFeeBasisPoints
-            vault.liquidationFeeUsd(),
-            vault.minProfitTime(),
-            vault.hasDynamicFees()
+        IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
+
+        feeUtils.setIsActive(true);
+    }
+
+    function activateFeeUtils(address _vault) external override onlyHandlerAndAbove {
+        IVault vault = IVault(_vault);
+        IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
+
+        feeUtils.setIsActive(true);
+    }
+
+    function deactivateFeeUtils(address _vault) external override onlyHandlerAndAbove {
+        IVault vault = IVault(_vault);
+        IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
+
+        feeUtils.setIsActive(false);
+    }
+
+    function setMaxLeverage(address _vault, uint256 _maxLeverage) external onlyAdmin {
+      require(_maxLeverage > MAX_LEVERAGE_VALIDATION, "Timelock: invalid _maxLeverage");
+      IVault(_vault).setMaxLeverage(_maxLeverage);
+    }
+
+    function setMinProfitTime(
+        address _vault,
+        uint256 _minProfitTime
+    ) external onlyKeeperAndAbove {
+        IVault(_vault).setMinProfitTime(_minProfitTime);
+    }
+
+    function setFeeMultiplierIfInactive(address _feeUtils, uint256 _feeMultiplierIfInactive) external onlyKeeperAndAbove {
+        IFeeUtils(_feeUtils).setFeeMultiplierIfInactive(_feeMultiplierIfInactive);
+    }
+
+    function setRolloverRateV1(address _feeUtils, uint256 _rolloverInterval, uint256 _rolloverRateFactor, uint256 _stableRolloverRateFactor) external onlyKeeperAndAbove {
+        require(_rolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "Timelock: invalid _rolloverRateFactor");
+        require(_stableRolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "Timelock: invalid _stableRolloverRateFactor");
+        IFeeUtilsV1(_feeUtils).setRolloverRate(_rolloverInterval, _rolloverRateFactor, _stableRolloverRateFactor);
+    }
+
+    function setRolloverIntervalV2(address _feeUtils, uint256 _rolloverInterval) external onlyKeeperAndAbove {
+        IFeeUtilsV2(_feeUtils).setRolloverInterval(_rolloverInterval);
+    }
+
+    function setFeesV1(
+        address _feeUtils,
+        uint256 _taxBasisPoints,
+        uint256 _stableTaxBasisPoints,
+        uint256 _mintBurnFeeBasisPoints,
+        uint256 _swapFeeBasisPoints,
+        uint256 _stableSwapFeeBasisPoints,
+        uint256 _marginFeeBasisPoints,
+        uint256 _liquidationFeeUsd,
+        bool _hasDynamicFees
+    ) external onlyKeeperAndAbove {
+        IFeeUtilsV1(_feeUtils).setFees(
+            _taxBasisPoints,
+            _stableTaxBasisPoints,
+            _mintBurnFeeBasisPoints,
+            _swapFeeBasisPoints,
+            _stableSwapFeeBasisPoints,
+            _marginFeeBasisPoints,
+            _liquidationFeeUsd,
+            _hasDynamicFees
         );
+    }
+
+    function setLiquidationFeeUsdV2(address _feeUtils, uint256 _liquidationFeeUsd) external onlyKeeperAndAbove {
+        IFeeUtilsV2(_feeUtils).setLiquidationFeeUsd(_liquidationFeeUsd);
+    }
+
+    function setHasDynamicFeesV2(address _feeUtils, bool _hasDynamicFees) external onlyKeeperAndAbove {
+        IFeeUtilsV2(_feeUtils).setHasDynamicFees(_hasDynamicFees);
+    }
+
+    function setTokenFeeFactorsV2(
+        address _feeUtils,
+        address _token,
+        uint256 _taxBasisPoints,
+        uint256 _mintBurnFeeBasisPoints,
+        uint256 _swapFeeBasisPoints,
+        uint256 _rolloverRateFactor,
+        uint256[] memory _relativePnlList,
+        uint256[] memory _positionFeeBpsList,
+        uint256[] memory _profitFeeBpsList
+    ) external onlyKeeperAndAbove {
+        require(_rolloverRateFactor < MAX_ROLLOVER_RATE_FACTOR, "Timelock: invalid _rolloverRateFactor");
+        IFeeUtilsV2(_feeUtils).setTokenFeeFactors(
+            _token,
+            _taxBasisPoints,
+            _mintBurnFeeBasisPoints,
+            _swapFeeBasisPoints,
+            _rolloverRateFactor,
+            _relativePnlList,
+            _positionFeeBpsList,
+            _profitFeeBpsList
+        );
+    }
+
+    function setIsSwapEnabled(address _vault, bool _isSwapEnabled) external onlyKeeperAndAbove {
+        IVault(_vault).setIsSwapEnabled(_isSwapEnabled);
     }
 
     function setIsLeverageEnabled(address _vault, bool _isLeverageEnabled) external override onlyHandlerAndAbove {
@@ -309,10 +318,6 @@ contract Timelock is ITimelock {
 
     function removeAdmin(address _token, address _account) external onlyAdmin {
         IYieldToken(_token).removeAdmin(_account);
-    }
-
-    function setIsSwapEnabled(address _vault, bool _isSwapEnabled) external onlyKeeperAndAbove {
-        IVault(_vault).setIsSwapEnabled(_isSwapEnabled);
     }
 
     function setTier(address _referralStorage, uint256 _tierId, uint256 _totalRebate, uint256 _discountShare) external onlyKeeperAndAbove {
@@ -590,7 +595,7 @@ contract Timelock is ITimelock {
         bool[] memory
     ) {
         address[] memory addressValues = new address[](3);
-        uint256[] memory intValues = new uint256[](3);
+        uint256[] memory intValues = new uint256[](1);
         bool[] memory boolValues = new bool[](1);
 
         addressValues[0] = admin;
@@ -598,8 +603,6 @@ contract Timelock is ITimelock {
         addressValues[2] = mintReceiver;
 
         intValues[0] = buffer;
-        intValues[1] = marginFeeBasisPoints;
-        intValues[2] = maxMarginFeeBasisPoints;
 
         boolValues[0] = shouldToggleIsLeverageEnabled;
 

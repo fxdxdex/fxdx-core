@@ -45,7 +45,7 @@ describe("Vault.averagePrice", function () {
     router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    const { feeUtils } = await initVault(vault, router, usdf, vaultPriceFeed)
 
     distributor0 = await deployContract("TimeDistributor", [])
     yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
@@ -61,7 +61,9 @@ describe("Vault.averagePrice", function () {
     await vaultPriceFeed.setTokenConfig(dai.address, daiPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(eth.address, ethPriceFeed.address, 8, false)
 
-    await vault.setFees(
+    await vault.setMinProfitTime(60 * 60)
+
+    await feeUtils.setFees(
       50, // _taxBasisPoints
       20, // _stableTaxBasisPoints
       30, // _mintBurnFeeBasisPoints
@@ -69,7 +71,6 @@ describe("Vault.averagePrice", function () {
       4, // _stableSwapFeeBasisPoints
       10, // _marginFeeBasisPoints
       toUsd(5), // _liquidationFeeUsd
-      60 * 60, // _minProfitTime
       false // _hasDynamicFees
     )
 

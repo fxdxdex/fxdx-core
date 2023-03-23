@@ -12,6 +12,7 @@ describe("Vault.closeShortPosition", function () {
   const provider = waffle.provider
   const [wallet, user0, user1, user2, user3] = provider.getWallets()
   let vault
+  let feeUtils
   let vaultPriceFeed
   let usdf
   let router
@@ -39,7 +40,8 @@ describe("Vault.closeShortPosition", function () {
     router = await deployContract("Router", [vault.address, usdf.address, bnb.address])
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
-    await initVault(vault, router, usdf, vaultPriceFeed)
+    const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    feeUtils = initVaultResult.feeUtils
 
     distributor0 = await deployContract("TimeDistributor", [])
     yieldTracker0 = await deployContract("YieldTracker", [usdf.address])
@@ -56,7 +58,8 @@ describe("Vault.closeShortPosition", function () {
   })
 
   it("close short position", async () => {
-    await vault.setFees(
+    await vault.setMinProfitTime(0)
+    await feeUtils.setFees(
       50, // _taxBasisPoints
       10, // _stableTaxBasisPoints
       4, // _mintBurnFeeBasisPoints
@@ -64,7 +67,6 @@ describe("Vault.closeShortPosition", function () {
       4, // _stableSwapFeeBasisPoints
       10, // _marginFeeBasisPoints
       toUsd(5), // _liquidationFeeUsd
-      0, // _minProfitTime
       false // _hasDynamicFees
     )
 
@@ -133,7 +135,8 @@ describe("Vault.closeShortPosition", function () {
   })
 
   it("close short position with loss", async () => {
-    await vault.setFees(
+    await vault.setMinProfitTime(0)
+    await feeUtils.setFees(
       50, // _taxBasisPoints
       10, // _stableTaxBasisPoints
       4, // _mintBurnFeeBasisPoints
@@ -141,7 +144,6 @@ describe("Vault.closeShortPosition", function () {
       4, // _stableSwapFeeBasisPoints
       10, // _marginFeeBasisPoints
       toUsd(5), // _liquidationFeeUsd
-      0, // _minProfitTime
       false // _hasDynamicFees
     )
 

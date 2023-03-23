@@ -533,6 +533,13 @@ module.exports = {
       isStable: false,
       isShortable: true,
       maxGlobalShortSize: 30 * 1000 * 1000,
+      taxBasisPoints: 10, // 0.1%
+      mintBurnFeeBasisPoints: 20, // 0.2%
+      swapFeeBasisPoints: 20, // 0.2%
+      rolloverRateFactor: 100,
+      relativePnlList: [0, 25, 50, 100, 1000, 5000],
+      positionFeeBpsList: [15, 15, 20, 30, 50, 100],
+      profitFeeBpsList: [500, 500, 500, 500, 500, 1000],
     },
     eth: {
       name: "eth",
@@ -550,6 +557,13 @@ module.exports = {
       isStable: false,
       isShortable: true,
       maxGlobalShortSize: 30 * 1000 * 1000,
+      taxBasisPoints: 10, // 0.1%
+      mintBurnFeeBasisPoints: 20, // 0.2%
+      swapFeeBasisPoints: 20, // 0.2%
+      rolloverRateFactor: 100,
+      relativePnlList: [0, 25, 50, 100, 1000, 5000],
+      positionFeeBpsList: [15, 15, 20, 30, 50, 100],
+      profitFeeBpsList: [500, 500, 500, 500, 500, 1000],
     },
     usdc: {
       name: "usdc",
@@ -563,7 +577,14 @@ module.exports = {
       maxUsdfAmount: 120 * 1000 * 1000,
       bufferAmount: 60 * 1000 * 1000,
       isStable: true,
-      isShortable: false
+      isShortable: false,
+      taxBasisPoints: 5, // 0.05%
+      mintBurnFeeBasisPoints: 20, // 0.2%
+      swapFeeBasisPoints: 1, // 0.01%
+      rolloverRateFactor: 100,
+      relativePnlList: [],
+      positionFeeBpsList: [],
+      profitFeeBpsList: [],
     },
     usdt: {
       name: "usdt",
@@ -577,7 +598,14 @@ module.exports = {
       maxUsdfAmount: 10 * 1000 * 1000,
       bufferAmount: 4 * 1000 * 1000,
       isStable: true,
-      isShortable: false
+      isShortable: false,
+      taxBasisPoints: 5, // 0.05%
+      mintBurnFeeBasisPoints: 20, // 0.2%
+      swapFeeBasisPoints: 1, // 0.01%
+      rolloverRateFactor: 100,
+      relativePnlList: [],
+      positionFeeBpsList: [],
+      profitFeeBpsList: [],
     },
     nativeToken: {
       name: "weth",

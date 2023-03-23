@@ -15,6 +15,7 @@ import "../tokens/interfaces/IMintable.sol";
 import "../tokens/interfaces/IWETH.sol";
 import "../core/interfaces/IFlpManager.sol";
 import "../core/interfaces/IVault.sol";
+import "../peripherals/interfaces/ITimelock.sol";
 import "../access/Governable.sol";
 
 contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
@@ -140,36 +141,6 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         _unstakeFxdx(msg.sender, esFxdx, _amount, true);
     }
 
-    function mintAndStakeFlp(address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant returns (uint256) {
-        require(_amount > 0, "RewardRouter: invalid _amount");
-
-        address account = msg.sender;
-        uint256 flpAmount = IFlpManager(flpManager).addLiquidityForAccount(account, account, _token, _amount, _minUsdf, _minFlp);
-        IRewardTracker(feeFlpTracker).stakeForAccount(account, account, flp, flpAmount);
-        IRewardTracker(stakedFlpTracker).stakeForAccount(account, account, feeFlpTracker, flpAmount);
-
-        emit StakeFlp(account, flpAmount);
-
-        return flpAmount;
-    }
-
-    function mintAndStakeFlpETH(uint256 _minUsdf, uint256 _minFlp) external override payable nonReentrant returns (uint256) {
-        require(msg.value > 0, "RewardRouter: invalid msg.value");
-
-        IWETH(weth).deposit{value: msg.value}();
-        IERC20(weth).approve(flpManager, msg.value);
-
-        address account = msg.sender;
-        uint256 flpAmount = IFlpManager(flpManager).addLiquidityForAccount(address(this), account, weth, msg.value, _minUsdf, _minFlp);
-
-        IRewardTracker(feeFlpTracker).stakeForAccount(account, account, flp, flpAmount);
-        IRewardTracker(stakedFlpTracker).stakeForAccount(account, account, feeFlpTracker, flpAmount);
-
-        emit StakeFlp(account, flpAmount);
-
-        return flpAmount;
-    }
-
     function mintAndStakeFlpForAccount(address _fundingAccount, address _account, address _token, uint256 _amount, uint256 _minUsdf, uint256 _minFlp) external override nonReentrant onlyLiquidityRouter returns (uint256) {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
@@ -180,36 +151,6 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         emit StakeFlp(_account, flpAmount);
 
         return flpAmount;
-    }
-
-    function unstakeAndRedeemFlp(address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant returns (uint256) {
-        require(_flpAmount > 0, "RewardRouter: invalid _flpAmount");
-
-        address account = msg.sender;
-        IRewardTracker(stakedFlpTracker).unstakeForAccount(account, feeFlpTracker, _flpAmount, account);
-        IRewardTracker(feeFlpTracker).unstakeForAccount(account, flp, _flpAmount, account);
-        uint256 amountOut = IFlpManager(flpManager).removeLiquidityForAccount(account, _tokenOut, _flpAmount, _minOut, _receiver);
-
-        emit UnstakeFlp(account, _flpAmount);
-
-        return amountOut;
-    }
-
-    function unstakeAndRedeemFlpETH(uint256 _flpAmount, uint256 _minOut, address payable _receiver) external override nonReentrant returns (uint256) {
-        require(_flpAmount > 0, "RewardRouter: invalid _flpAmount");
-
-        address account = msg.sender;
-        IRewardTracker(stakedFlpTracker).unstakeForAccount(account, feeFlpTracker, _flpAmount, account);
-        IRewardTracker(feeFlpTracker).unstakeForAccount(account, flp, _flpAmount, account);
-        uint256 amountOut = IFlpManager(flpManager).removeLiquidityForAccount(account, weth, _flpAmount, _minOut, address(this));
-
-        IWETH(weth).withdraw(amountOut);
-
-        _receiver.sendValue(amountOut);
-
-        emit UnstakeFlp(account, _flpAmount);
-
-        return amountOut;
     }
 
     function unstakeAndRedeemFlpForAccount(address _account, address _tokenOut, uint256 _flpAmount, uint256 _minOut, address _receiver) external override nonReentrant onlyLiquidityRouter returns (uint256) {
@@ -310,7 +251,10 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
                     if (_path.length > 1) {
                         address swapReceiver = _shouldConvertFeesToEth ? address(this) : account;
                         IERC20(_path[0]).safeTransfer(vault, feeAmount);
+                        address timelock = IVault(vault).gov();
+                        ITimelock(timelock).activateFeeUtils(vault);
                         feeAmount = _swap(_path, 0, swapReceiver);
+                        ITimelock(timelock).deactivateFeeUtils(vault);
                     }
 
                     if (_shouldConvertFeesToEth) {

@@ -11,6 +11,7 @@ import "../libraries/utils/ReentrancyGuard.sol";
 
 import "./interfaces/IRouter.sol";
 import "./interfaces/IVault.sol";
+import "./interfaces/IFeeUtils.sol";
 import "./interfaces/IOrderBook.sol";
 import "./interfaces/IBasePositionManager.sol";
 
@@ -176,7 +177,7 @@ contract BasePositionManager is IBasePositionManager, ReentrancyGuard, Governabl
         IRouter(router).pluginIncreasePosition(_account, _collateralToken, _indexToken, _sizeDelta, _isLong);
         ITimelock(timelock).disableLeverage(_vault);
 
-        _emitIncreasePositionReferral(_account, _sizeDelta);
+        _emitIncreasePositionReferral(_account, _indexToken, _sizeDelta);
     }
 
     function _decreasePosition(address _account, address _collateralToken, address _indexToken, uint256 _collateralDelta, uint256 _sizeDelta, bool _isLong, address _receiver, uint256 _price) internal returns (uint256) {
@@ -194,28 +195,30 @@ contract BasePositionManager is IBasePositionManager, ReentrancyGuard, Governabl
         uint256 amountOut = IRouter(router).pluginDecreasePosition(_account, _collateralToken, _indexToken, _collateralDelta, _sizeDelta, _isLong, _receiver);
         ITimelock(timelock).disableLeverage(_vault);
 
-        _emitDecreasePositionReferral(_account, _sizeDelta);
+        _emitDecreasePositionReferral(_account, _indexToken, _sizeDelta);
 
         return amountOut;
     }
 
-    function _emitIncreasePositionReferral(address _account, uint256 _sizeDelta) internal {
+    function _emitIncreasePositionReferral(address _account, address _indexToken, uint256 _sizeDelta) internal {
         address _referralStorage = referralStorage;
         if (_referralStorage == address(0)) {
             return;
         }
 
         (bytes32 referralCode, address referrer) = IReferralStorage(_referralStorage).getTraderReferralInfo(_account);
+
+        address feeUtils = IVault(vault).getFeeUtils();
         emit IncreasePositionReferral(
             _account,
             _sizeDelta,
-            IVault(vault).marginFeeBasisPoints(),
+            IFeeUtils(feeUtils).getBaseIncreasePositionFeeBps(_indexToken),
             referralCode,
             referrer
         );
     }
 
-    function _emitDecreasePositionReferral(address _account, uint256 _sizeDelta) internal {
+    function _emitDecreasePositionReferral(address _account, address _indexToken, uint256 _sizeDelta) internal {
         address _referralStorage = referralStorage;
         if (_referralStorage == address(0)) {
             return;
@@ -227,10 +230,11 @@ contract BasePositionManager is IBasePositionManager, ReentrancyGuard, Governabl
             return;
         }
 
+        address feeUtils = IVault(vault).getFeeUtils();
         emit DecreasePositionReferral(
             _account,
             _sizeDelta,
-            IVault(vault).marginFeeBasisPoints(),
+            IFeeUtils(feeUtils).getBaseDecreasePositionFeeBps(_indexToken),
             referralCode,
             referrer
         );

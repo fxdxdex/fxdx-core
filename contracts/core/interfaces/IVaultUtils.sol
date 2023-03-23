@@ -2,16 +2,13 @@
 
 pragma solidity 0.6.12;
 
+import "./IFeeUtils.sol";
+
 interface IVaultUtils {
-    function updateCumulativeFundingRate(address _collateralToken, address _indexToken) external returns (bool);
+    function getFeeUtils() external view returns (address);
+
+    function setFeeUtils(IFeeUtils _feeUtils) external;
     function validateIncreasePosition(address _account, address _collateralToken, address _indexToken, uint256 _sizeDelta, bool _isLong) external view;
     function validateDecreasePosition(address _account, address _collateralToken, address _indexToken, uint256 _collateralDelta, uint256 _sizeDelta, bool _isLong, address _receiver) external view;
     function validateLiquidation(address _account, address _collateralToken, address _indexToken, bool _isLong, bool _raise) external view returns (uint256, uint256);
-    function getEntryFundingRate(address _collateralToken, address _indexToken, bool _isLong) external view returns (uint256);
-    function getPositionFee(address _account, address _collateralToken, address _indexToken, bool _isLong, uint256 _sizeDelta) external view returns (uint256);
-    function getFundingFee(address _account, address _collateralToken, address _indexToken, bool _isLong, uint256 _size, uint256 _entryFundingRate) external view returns (uint256);
-    function getBuyUsdfFeeBasisPoints(address _token, uint256 _usdfAmount) external view returns (uint256);
-    function getSellUsdfFeeBasisPoints(address _token, uint256 _usdfAmount) external view returns (uint256);
-    function getSwapFeeBasisPoints(address _tokenIn, address _tokenOut, uint256 _usdfAmount) external view returns (uint256);
-    function getFeeBasisPoints(address _token, uint256 _usdfDelta, uint256 _feeBasisPoints, uint256 _taxBasisPoints, bool _increment) external view returns (uint256);
 }
