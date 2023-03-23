@@ -150,7 +150,7 @@ contract Timelock is ITimelock {
 
         IFeeUtils feeUtils = IFeeUtils(vault.getFeeUtils());
 
-        feeUtils.setIsActive(true);
+        feeUtils.setIsActive(false);
     }
 
     function activateFeeUtils(address _vault) external override onlyHandlerAndAbove {
@@ -334,6 +334,10 @@ contract Timelock is ITimelock {
 
     function setVaultUtils(address _vault, IVaultUtils _vaultUtils) external onlyAdmin {
         IVault(_vault).setVaultUtils(_vaultUtils);
+    }
+
+    function setFeeUtils(address _vault, IFeeUtils _feeUtils) external onlyAdmin {
+        IVault(_vault).setFeeUtils(_feeUtils);
     }
 
     function setMaxGasPrice(address _vault, uint256 _maxGasPrice) external onlyAdmin {

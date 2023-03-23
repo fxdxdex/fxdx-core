@@ -1,7 +1,7 @@
 const { expect, use } = require("chai")
 const { solidity } = require("ethereum-waffle")
 const { deployContract } = require("../shared/fixtures")
-const { expandDecimals, getBlockTime, increaseTime, mineBlock, reportGasUsed } = require("../shared/utilities")
+const { expandDecimals, increaseTime, mineBlock } = require("../shared/utilities")
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd, toNormalizedPrice } = require("../shared/units")
 const { initVault } = require("../core/Vault/helpers")
@@ -14,6 +14,8 @@ describe("FxdxTimelock", function () {
   const provider = waffle.provider
   const [wallet, user0, user1, user2, user3, rewardManager, tokenManager, mintReceiver] = provider.getWallets()
   let vault
+  let feeUtils
+  let feeUtilsV2
   let vaultUtils
   let vaultPriceFeed
   let usdf
@@ -44,6 +46,7 @@ describe("FxdxTimelock", function () {
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
 
     const initVaultResult = await initVault(vault, router, usdf, vaultPriceFeed)
+    feeUtils = initVaultResult.feeUtils
     vaultUtils = initVaultResult.vaultUtils
 
     distributor0 = await deployContract("TimeDistributor", [])
@@ -67,12 +70,17 @@ describe("FxdxTimelock", function () {
       expandDecimals(1000, 18)
     ])
     await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
 
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(dai.address, daiPriceFeed.address, 8, false)
 
     await vaultPriceFeed.setGov(timelock.address)
     await router.setGov(timelock.address)
+
+    feeUtilsV2 = await deployContract("FeeUtilsV2", [vault.address])
+    await feeUtilsV2.initialize(toUsd(5), true)
+    await feeUtilsV2.setGov(timelock.address)
   })
 
   it("inits", async () => {
@@ -84,8 +92,8 @@ describe("FxdxTimelock", function () {
     expect(await vault.isInitialized()).eq(true)
     expect(await vault.router()).eq(router.address)
     expect(await vault.usdf()).eq(usdf.address)
-    expect(await vault.liquidationFeeUsd()).eq(toUsd(5))
-    expect(await vault.fundingRateFactor()).eq(600)
+    expect(await feeUtils.liquidationFeeUsd()).eq(toUsd(5))
+    expect(await feeUtils.rolloverRateFactor()).eq(600)
 
     expect(await timelock.admin()).eq(wallet.address)
     expect(await timelock.buffer()).eq(5 * 24 * 60 * 60)
@@ -328,22 +336,34 @@ describe("FxdxTimelock", function () {
     expect(await vault.maxLeverage()).eq(100 * 10000)
   })
 
-  it("setFundingRate", async () => {
-    await expect(timelock.connect(user0).setFundingRate(vault.address, 59 * 60, 100, 100))
+  it("setRolloverRateV1", async () => {
+    await expect(timelock.connect(user0).setRolloverRateV1(feeUtils.address, 59 * 60, 100, 100))
       .to.be.revertedWith("FxdxTimelock: forbidden")
 
-    await expect(timelock.connect(wallet).setFundingRate(vault.address, 59 * 60, 100, 100))
-      .to.be.revertedWith("Vault: invalid _fundingInterval")
+    await expect(timelock.connect(wallet).setRolloverRateV1(feeUtils.address, 59 * 60, 100, 100))
+      .to.be.revertedWith("FeeUtilsV1: invalid _rolloverInterval")
 
-    expect(await vault.fundingRateFactor()).eq(600)
-    expect(await vault.stableFundingRateFactor()).eq(600)
-    await timelock.connect(wallet).setFundingRate(vault.address, 60 * 60, 0, 100)
-    expect(await vault.fundingRateFactor()).eq(0)
-    expect(await vault.stableFundingRateFactor()).eq(100)
+    expect(await feeUtils.rolloverRateFactor()).eq(600)
+    expect(await feeUtils.stableRolloverRateFactor()).eq(600)
+    await timelock.connect(wallet).setRolloverRateV1(feeUtils.address, 60 * 60, 0, 100)
+    expect(await feeUtils.rolloverRateFactor()).eq(0)
+    expect(await feeUtils.stableRolloverRateFactor()).eq(100)
 
-    await timelock.connect(wallet).setFundingRate(vault.address, 60 * 60, 100, 0)
-    expect(await vault.fundingRateFactor()).eq(100)
-    expect(await vault.stableFundingRateFactor()).eq(0)
+    await timelock.connect(wallet).setRolloverRateV1(feeUtils.address, 60 * 60, 100, 0)
+    expect(await feeUtils.rolloverInterval()).eq(60 * 60)
+    expect(await feeUtils.rolloverRateFactor()).eq(100)
+    expect(await feeUtils.stableRolloverRateFactor()).eq(0)
+  })
+
+  it("setRolloverIntervalV2", async () => {
+    await expect(timelock.connect(user0).setRolloverIntervalV2(feeUtilsV2.address, 59 * 60))
+      .to.be.revertedWith("FxdxTimelock: forbidden")
+
+    await expect(timelock.connect(wallet).setRolloverIntervalV2(feeUtilsV2.address, 59 * 60))
+      .to.be.revertedWith("FeeUtilsV2: invalid _rolloverInterval")
+
+    await timelock.connect(wallet).setRolloverIntervalV2(feeUtilsV2.address, 60 * 60)
+    expect(await feeUtilsV2.rolloverInterval()).eq(60 * 60)
   })
 
   it("transferIn", async () => {

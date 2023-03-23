@@ -150,7 +150,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
         for (uint256 i = 0; i < _relativePnlList.length; i ++) {
             require(i == 0 || _relativePnlList[i - 1] <= _relativePnlList[i], "FeeUtilsV2: invalid _relativePnlList");
             require(_positionFeeBpsList[i] <= MAX_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _positionFeeBpsList");
-            require(_profitFeeBpsList[1] <= MAX_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _profitFeeBpsList");
+            require(_profitFeeBpsList[i] <= MAX_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _profitFeeBpsList");
         }
 
         taxBasisPoints[_token] = _taxBasisPoints;
