@@ -28,6 +28,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
     uint256 public constant ROLLOVER_RATE_PRECISION = 1000000;
     uint256 public constant PRICE_PRECISION = 10 ** 30;
     uint256 public constant MAX_FEE_BASIS_POINTS = 500; // 5%
+    uint256 public constant MAX_PROFIT_FEE_BASIS_POINTS = 5000; // 50%
     uint256 public constant MAX_LIQUIDATION_FEE_USD = 100 * PRICE_PRECISION; // 100 USD
     uint256 public constant MIN_ROLLOVER_RATE_INTERVAL = 1 hours;
     uint256 public constant MAX_ROLLOVER_RATE_FACTOR = 10000; // 1%
@@ -150,7 +151,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
         for (uint256 i = 0; i < _relativePnlList.length; i ++) {
             require(i == 0 || _relativePnlList[i - 1] <= _relativePnlList[i], "FeeUtilsV2: invalid _relativePnlList");
             require(_positionFeeBpsList[i] <= MAX_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _positionFeeBpsList");
-            require(_profitFeeBpsList[i] <= MAX_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _profitFeeBpsList");
+            require(_profitFeeBpsList[i] <= MAX_PROFIT_FEE_BASIS_POINTS, "FeeUtilsV2: invalid _profitFeeBpsList");
         }
 
         taxBasisPoints[_token] = _taxBasisPoints;
