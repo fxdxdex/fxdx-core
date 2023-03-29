@@ -9,8 +9,8 @@ async function getValues() {
   const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
   const positionManager = await contractAt("PositionManager", addresses.positionManager)
 
-  const { btc, eth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, usdc, usdt]
+  const { btc, eth, feth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, feth, usdc, usdt]
 
   return { positionRouter, positionManager, tokenArr }
 }

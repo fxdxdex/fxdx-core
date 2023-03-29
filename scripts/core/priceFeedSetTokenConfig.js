@@ -22,8 +22,8 @@ async function main() {
   console.log("priceFeedTimelock", priceFeedTimelock.address)
   console.log("priceFeedMethod", priceFeedMethod)
 
-  const { btc, eth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, usdc, usdt]
+  const { btc, eth, feth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, feth, usdc, usdt]
 
   for (const token of tokenArr) {
     await sendTxn(priceFeedTimelock[priceFeedMethod](

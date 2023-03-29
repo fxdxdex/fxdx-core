@@ -6,8 +6,7 @@ const addresses = require('./addresses')[network];
 
 const depositFee = 30 // 0.3%
 
-// TODO: set referral storage
-async function getValues() {
+async function main() {
   // const signer = await getFrameSigner()
 
   const vault = await contractAt("Vault", addresses.vault)
@@ -35,15 +34,7 @@ async function getValues() {
   //   "0x46d6dEE922f1d2C6421895Ba182120C784d986d3", // Vovo FLP BTC down vault
   // ]
 
-  const partnerContracts = [
-
-  ]
-
-  return { vault, timelock, router, weth, depositFee, orderBook, orderKeeper, liquidator, partnerContracts }
-}
-
-async function main() {
-  const { vault, timelock, router, weth, depositFee, orderBook, orderKeeper, liquidator, partnerContracts } = await getValues()
+  const partnerContracts = []
 
   const positionManager = await deployContract("PositionManager", [vault.address, router.address, weth.address, depositFee, orderBook.address])
   // const positionManager = await contractAt("PositionManager", addresses.positionManager)

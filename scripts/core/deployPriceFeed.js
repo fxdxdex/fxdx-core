@@ -10,9 +10,9 @@ async function deployPriceFeed() {
   // const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
   // const tokenArr = [btc, eth, usdc, link, uni, usdt, mim, frax, dai]
   // const fastPriceTokens = [btc, eth, link, uni]
-  const { btc, eth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, usdc, usdt]
-  const fastPriceTokens = [btc, eth]
+  const { btc, eth, feth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, feth, usdc, usdt]
+  const fastPriceTokens = [btc, eth, feth]
 
   if (fastPriceTokens.find(t => !t.fastPricePrecision)) {
     throw new Error("Invalid price precision")

@@ -3,9 +3,9 @@ const { expandDecimals } = require("../../test/shared/utilities")
 
 async function main() {
 	const account = (await ethers.getSigners())[0]
-	const {BTC, ETH, USDC, USDT} = readTmpAddresses()
+	const {BTC, ETH, USDC, USDT, FETH} = readTmpAddresses()
 
-	for (const tokenAddress of [BTC, USDC, USDT]) {
+	for (const tokenAddress of [BTC, FETH, USDC, USDT]) {
 		const amount = expandDecimals(100000, 18)
 		console.log(`Minting ${amount} of tokens ${tokenAddress}`)
 		const tokenContract = await contractAt("FaucetToken", tokenAddress)
