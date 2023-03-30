@@ -104,12 +104,6 @@ module.exports = {
       chainId: 420,
       accounts: [OPTIMISM_GOERLI_DEPLOY_KEY]
     },
-    optimismGoerliV2: {
-      url: OPTIMISM_GOERLI_URL,
-      // gasPrice: 10000000000,
-      chainId: 420,
-      accounts: [OPTIMISM_GOERLI_DEPLOY_KEY]
-    }
   },
   etherscan: {
     apiKey: {
