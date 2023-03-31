@@ -350,7 +350,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
                 positionFeeBps = positionFeeBpsList[len - 1];
                 profitFeeBps = profitFeeBpsList[len - 1];
             } else {
-                for (uint256 i = 1; i < len; len++) {
+                for (uint256 i = 1; i < len; i++) {
                     if (relativePnl < relativePnlList[i]) {
                         uint256 minRelativePnl = relativePnlList[i - 1];
                         uint256 maxRelativePnl = relativePnlList[i];
