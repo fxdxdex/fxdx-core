@@ -3,7 +3,7 @@ const { expandDecimals } = require("../../test/shared/utilities")
 
 async function main() {
 	const account = (await ethers.getSigners())[0]
-	const {BTC, ETH, USDC, USDT, FETH} = readTmpAddresses()
+	const {BTC, USDC, USDT, FETH} = readTmpAddresses()
 
 	for (const tokenAddress of [BTC, FETH, USDC, USDT]) {
 		const amount = expandDecimals(100000, 18)
