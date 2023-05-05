@@ -205,6 +205,7 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
         bool _shouldStakeMultiplierPoints,
         bool _shouldClaimFees,
         address[] memory _path,
+        uint256 _minOut,
         bool _shouldConvertFeesToEth
     ) external nonReentrant {
         address account = msg.sender;
@@ -253,7 +254,7 @@ contract RewardRouterV2 is IRewardRouter, ReentrancyGuard, Governable {
                         IERC20(_path[0]).safeTransfer(vault, feeAmount);
                         address timelock = IVault(vault).gov();
                         ITimelock(timelock).activateFeeUtils(vault);
-                        feeAmount = _swap(_path, 0, swapReceiver);
+                        feeAmount = _swap(_path, _minOut, swapReceiver);
                         ITimelock(timelock).deactivateFeeUtils(vault);
                     }
 

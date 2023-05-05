@@ -1323,6 +1323,7 @@ describe("RewardRouterV2", function () {
       true, // _shouldStakeMultiplierPoints
       true, // _shouldClaimFees
       [eth.address], // _path
+      0, // _minOut
       false // _shouldConvertFeesToEth
     )
 
@@ -1352,6 +1353,7 @@ describe("RewardRouterV2", function () {
       false, // _shouldStakeMultiplierPoints
       true, // _shouldClaimFees
       [eth.address], // _path
+      0, // _minOut
       true // _shouldConvertFeesToEth
     )
 
@@ -1379,7 +1381,8 @@ describe("RewardRouterV2", function () {
       false, // _shouldStakeEsFxdx
       false, // _shouldStakeMultiplierPoints
       false, // _shouldClaimFees
-      [],
+      [], // _path
+      0, // _minOut
       false // _shouldConvertFeesToEth
     )
 
@@ -1425,6 +1428,18 @@ describe("RewardRouterV2", function () {
     await dai.connect(user0).transfer(vault.address, expandDecimals(2000000, 18))
     await vault.directPoolDeposit(dai.address);
 
+    await expect(rewardRouterV2.connect(user1).handleRewards(
+      true, // _shouldClaimFxdx
+      false, // _shouldStakeFxdx
+      false, // _shouldClaimEsFxdx
+      false, // _shouldStakeEsFxdx
+      false, // _shouldStakeMultiplierPoints
+      true, // _shouldClaimFees
+      [eth.address, dai.address], // _path
+      expandDecimals(24000, 18), // _minOut
+      false // _shouldConvertFeesToEth
+    )).to.be.revertedWith("RewardRouterV2: insufficient amountOut")
+
     await rewardRouterV2.connect(user1).handleRewards(
       true, // _shouldClaimFxdx
       false, // _shouldStakeFxdx
@@ -1433,6 +1448,7 @@ describe("RewardRouterV2", function () {
       false, // _shouldStakeMultiplierPoints
       true, // _shouldClaimFees
       [eth.address, dai.address], // _path
+      expandDecimals(21000, 18), // _minOut
       false // _shouldConvertFeesToEth
     )
 
