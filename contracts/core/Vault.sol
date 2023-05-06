@@ -342,7 +342,7 @@ contract Vault is ReentrancyGuard, IVault {
         getMaxPrice(_token);
     }
 
-    function clearTokenConfig(address _token) external {
+    function clearTokenConfig(address _token) external override {
         _onlyGov();
         _validate(whitelistedTokens[_token], 13);
         totalTokenWeights = totalTokenWeights.sub(tokenWeights[_token]);
@@ -354,6 +354,17 @@ contract Vault is ReentrancyGuard, IVault {
         delete stableTokens[_token];
         delete shortableTokens[_token];
         whitelistedTokenCount = whitelistedTokenCount.sub(1);
+
+        // remove the _token from allWhitelistedTokens
+        uint256 index = 0;
+        for (uint256 i = 0; i < allWhitelistedTokens.length; i++) {
+            if (_token == allWhitelistedTokens[i]) {
+                index = i;
+                break;
+            }
+        }
+        allWhitelistedTokens[index] = allWhitelistedTokens[allWhitelistedTokens.length - 1];
+        allWhitelistedTokens.pop();
     }
 
     function withdrawFees(address _token, address _receiver) external override returns (uint256) {

@@ -58,6 +58,11 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         vault = _vault;
     }
 
+    modifier afterInitialized() {
+        require(isInitialized, "FeeUtilsV1: not initialized yet");
+        _;
+    }
+
     function initialize(
         uint256 _liquidationFeeUsd,
         uint256 _rolloverRateFactor,
@@ -83,7 +88,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         feeMultiplierIfInactive = _feeMultiplierIfInactive;
     }
 
-    function setIsActive(bool _isActive) external override {
+    function setIsActive(bool _isActive) external override afterInitialized {
         _onlyGov();
         isActive = _isActive;
     }
@@ -137,15 +142,15 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         hasDynamicFees = _hasDynamicFees;
     }
 
-    function getLiquidationFeeUsd() external override view returns (uint256) {
+    function getLiquidationFeeUsd() external override view afterInitialized returns (uint256) {
         return liquidationFeeUsd;
     }
 
-    function getBaseIncreasePositionFeeBps(address /* _indexToken */) external override view returns(uint256) {
+    function getBaseIncreasePositionFeeBps(address /* _indexToken */) external override view afterInitialized returns(uint256) {
         return marginFeeBasisPoints;
     }
 
-    function getBaseDecreasePositionFeeBps(address /* _indexToken */) external override view returns(uint256) {
+    function getBaseDecreasePositionFeeBps(address /* _indexToken */) external override view afterInitialized returns(uint256) {
         return marginFeeBasisPoints;
     }
 
@@ -172,7 +177,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         stableRolloverRateFactor = _stableRolloverRateFactor;
     }
 
-    function updateCumulativeRolloverRate(address _collateralToken) external override {
+    function updateCumulativeRolloverRate(address _collateralToken) external override afterInitialized {
         if (lastRolloverTimes[_collateralToken] == 0) {
             lastRolloverTimes[_collateralToken] = block
                 .timestamp
@@ -198,7 +203,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         );
     }
 
-    function getNextRolloverRate(address _token) public view override returns (uint256) {
+    function getNextRolloverRate(address _token) public view override afterInitialized returns (uint256) {
         if (lastRolloverTimes[_token].add(rolloverInterval) > block.timestamp) {
             return 0;
         }
@@ -219,11 +224,11 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
             .div(poolAmount);
     }
 
-    function getEntryRolloverRate( address _collateralToken ) public override view returns (uint256) {
+    function getEntryRolloverRate( address _collateralToken ) public override view afterInitialized returns (uint256) {
         return cumulativeRolloverRates[_collateralToken];
     }
 
-    function getRolloverRates(address _weth, address[] memory _tokens) external override view returns (uint256[] memory) {
+    function getRolloverRates(address _weth, address[] memory _tokens) external override view afterInitialized returns (uint256[] memory) {
         uint256 propsLength = 2;
         uint256[] memory rolloverRates = new uint256[](_tokens.length * propsLength);
 
@@ -255,7 +260,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         address _collateralToken,
         uint256 _size,
         uint256 _entryRolloverRate
-    ) external view override returns (uint256) {
+    ) external view override afterInitialized returns (uint256) {
         if (_size == 0) {
             return 0;
         }
@@ -276,7 +281,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         address /* _indexToken */,
         bool /* _isLong */,
         uint256 _sizeDelta
-    ) external view override returns (uint256) {
+    ) external view override afterInitialized returns (uint256) {
         if (_sizeDelta == 0) {
             return 0;
         }
@@ -295,7 +300,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         address /* _indexToken */,
         bool /* _isLong */,
         uint256 _sizeDelta
-    ) external view override returns (uint256) {
+    ) external view override afterInitialized returns (uint256) {
         if (_sizeDelta == 0) {
             return 0;
         }
@@ -311,7 +316,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
     function getBuyUsdfFeeBasisPoints(
         address _token,
         uint256 _usdfAmount
-    ) public view override returns (uint256) {
+    ) public view override afterInitialized returns (uint256) {
         return getFeeBasisPoints(
             _token,
             _usdfAmount,
@@ -324,7 +329,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
     function getSellUsdfFeeBasisPoints(
         address _token,
         uint256 _usdfAmount
-    ) public view override returns (uint256) {
+    ) public view override afterInitialized returns (uint256) {
         return getFeeBasisPoints(
             _token,
             _usdfAmount,
@@ -338,7 +343,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         address _tokenIn,
         address _tokenOut,
         uint256 _usdfAmount
-    ) public view override returns (uint256) {
+    ) public view override afterInitialized returns (uint256) {
         bool isStableSwap = vault.stableTokens(_tokenIn) && vault.stableTokens(_tokenOut);
         uint256 baseBps = isStableSwap
             ? stableSwapFeeBasisPoints
@@ -381,7 +386,7 @@ contract FeeUtilsV1 is IFeeUtils, IFeeUtilsV1 {
         uint256 _feeBasisPoints,
         uint256 _taxBasisPoints,
         bool _increment
-    ) public view override returns (uint256) {
+    ) public view override afterInitialized returns (uint256) {
         uint256 feeBps = _feeBasisPoints.mul(isActive ? 1 : feeMultiplierIfInactive);
 
         if (!hasDynamicFees) {

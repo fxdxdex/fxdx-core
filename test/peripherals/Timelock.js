@@ -940,6 +940,106 @@ describe("Timelock", function () {
     expect(await vault.shortableTokens(dai.address)).eq(false)
   })
 
+  it("vaultClearTokenConfig", async () => {
+    await timelock.setContractHandler(user0.address, true)
+
+    await timelock.connect(wallet).signalSetPriceFeed(vault.address, vaultPriceFeed.address)
+    await increaseTime(provider, 5 * 24 * 60 * 60 + 10)
+    await mineBlock(provider)
+    await timelock.connect(wallet).setPriceFeed(vault.address, vaultPriceFeed.address)
+
+    await daiPriceFeed.setLatestAnswer(1)
+
+    await expect(timelock.connect(user0).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Timelock: forbidden")
+
+    await expect(timelock.connect(wallet).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Timelock: action not signalled")
+
+    await expect(timelock.connect(user0).signalVaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.connect(wallet).signalVaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )
+
+    await expect(timelock.connect(wallet).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Timelock: action time not yet passed")
+
+    await increaseTime(provider, 4 * 24 * 60 * 60)
+    await mineBlock(provider)
+
+    await expect(timelock.connect(wallet).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Timelock: action time not yet passed")
+
+    await increaseTime(provider, 1 * 24 * 60 * 60 + 10)
+    await mineBlock(provider)
+
+    await expect(timelock.connect(wallet).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )).to.be.revertedWith("Vault: token not whitelisted")
+
+    await timelock.connect(wallet).signalVaultSetTokenConfig(
+      vault.address,
+      dai.address, // _token
+      12, // _tokenDecimals
+      7000, // _tokenWeight
+      120, // _minProfitBps
+      5000, // _maxUsdfAmount
+      true, // _isStable
+      false // isShortable
+    )
+
+    await increaseTime(provider, 5 * 24 * 60 *60)
+    await mineBlock(provider)
+
+    await timelock.connect(wallet).vaultSetTokenConfig(
+      vault.address,
+      dai.address, // _token
+      12, // _tokenDecimals
+      7000, // _tokenWeight
+      120, // _minProfitBps
+      5000, // _maxUsdfAmount
+      true, // _isStable
+      false // isShortable
+    )
+
+    expect(await vault.totalTokenWeights()).eq(7000)
+    expect(await vault.whitelistedTokens(dai.address)).eq(true)
+    expect(await vault.tokenDecimals(dai.address)).eq(12)
+    expect(await vault.tokenWeights(dai.address)).eq(7000)
+    expect(await vault.minProfitBasisPoints(dai.address)).eq(120)
+    expect(await vault.maxUsdfAmounts(dai.address)).eq(5000)
+    expect(await vault.stableTokens(dai.address)).eq(true)
+    expect(await vault.shortableTokens(dai.address)).eq(false)
+
+    await timelock.connect(wallet).vaultClearTokenConfig(
+      vault.address,
+      dai.address // _token
+    )
+
+    expect(await vault.totalTokenWeights()).eq(0)
+    expect(await vault.whitelistedTokens(dai.address)).eq(false)
+    expect(await vault.tokenDecimals(dai.address)).eq(0)
+    expect(await vault.tokenWeights(dai.address)).eq(0)
+    expect(await vault.minProfitBasisPoints(dai.address)).eq(0)
+    expect(await vault.maxUsdfAmounts(dai.address)).eq(0)
+    expect(await vault.stableTokens(dai.address)).eq(false)
+    expect(await vault.shortableTokens(dai.address)).eq(false)
+  })
+
   it("setInPrivateTransferMode", async () => {
     const fxdx = await deployContract("FXDX", [])
     await fxdx.setMinter(wallet.address, true)

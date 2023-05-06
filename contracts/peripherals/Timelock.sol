@@ -63,6 +63,11 @@ contract Timelock is ITimelock {
         bool isShortable,
         bytes32 action
     );
+    event SignalVaultClearTokenConfig(
+        address vault,
+        address token,
+        bytes32 action
+    );
     event ClearAction(bytes32 action);
 
     modifier onlyAdmin() {
@@ -559,6 +564,41 @@ contract Timelock is ITimelock {
             _isStable,
             _isShortable
         );
+    }
+
+    function signalVaultClearTokenConfig(
+        address _vault,
+        address _token
+    ) external onlyAdmin {
+        bytes32 action = keccak256(abi.encodePacked(
+            "vaultClearTokenConfig",
+            _vault,
+            _token
+        ));
+
+        _setPendingAction(action);
+
+        emit SignalVaultClearTokenConfig(
+            _vault,
+            _token,
+            action
+        );
+    }
+
+    function vaultClearTokenConfig(
+        address _vault,
+        address _token
+    ) external onlyAdmin {
+        bytes32 action = keccak256(abi.encodePacked(
+            "vaultClearTokenConfig",
+            _vault,
+            _token
+        ));
+
+        _validateAction(action);
+        _clearAction(action);
+
+        IVault(_vault).clearTokenConfig(_token);
     }
 
     function cancelAction(bytes32 _action) external onlyAdmin {
