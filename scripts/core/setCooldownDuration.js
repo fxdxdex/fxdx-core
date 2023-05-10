@@ -6,7 +6,7 @@ const addresses = require('./addresses')[network];
 async function main() {
   const flpManager = await contractAt("FlpManager", addresses.flpManager);
 
-  await sendTxn(flpManager.setCooldownDuration(0), "flpManager.setCooldownDuration")
+  await sendTxn(flpManager.setCooldownDuration(10 * 60), "flpManager.setCooldownDuration")
 }
 
 main()

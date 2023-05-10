@@ -5,6 +5,7 @@ const { expandDecimals, getBlockTime, increaseTime, mineBlock, reportGasUsed } =
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd, toNormalizedPrice } = require("../shared/units")
 const { initVault, getBnbConfig, getBtcConfig, getDaiConfig, validateVaultBalance } = require("./Vault/helpers")
+const { ethers } = require("hardhat")
 
 use(solidity)
 
@@ -122,6 +123,16 @@ describe("PositionManager", function () {
     expect(await positionManager.weth(), 'weth').eq(bnb.address)
     expect(await positionManager.depositFee()).eq(50)
     expect(await positionManager.gov(), 'gov').eq(wallet.address)
+    expect(await positionManager.fastPriceFeed(), 'fastPriceFeed').eq(ethers.constants.AddressZero)
+  })
+
+  it("setFastPriceFeed", async () => {
+    await expect(positionManager.connect(user0).setFastPriceFeed(user1.address))
+      .to.be.revertedWith("BasePositionManager: forbidden")
+
+    expect(await positionManager.fastPriceFeed()).eq(ethers.constants.AddressZero)
+    await positionManager.connect(wallet).setFastPriceFeed(user1.address)
+    expect(await positionManager.fastPriceFeed()).eq(user1.address)
   })
 
   it("setDepositFee", async () => {
@@ -588,6 +599,33 @@ describe("PositionManager", function () {
     expect(balanceAfter.gt(balanceBefore)).to.be.true
   })
 
+  it("submitPricesAndExecuteSwapOrder", async () => {
+    await dai.mint(user0.address, expandDecimals(1000, 18))
+    await dai.connect(user0).approve(router.address, expandDecimals(100, 18))
+    await orderBook.connect(user0).createSwapOrder(
+      [dai.address, btc.address],
+      expandDecimals(100, 18), //amountIn,
+      0,
+      0,
+      true,
+      expandDecimals(1, 17),
+      false,
+      false,
+      {value: expandDecimals(1, 17)}
+    )
+    const orderIndex = (await orderBook.swapOrdersIndex(user0.address)) - 1
+
+    await expect(positionManager.connect(user1).submitPricesAndExecuteSwapOrder(0, 0, user0.address, orderIndex, user1.address))
+      .to.be.revertedWith("PositionManager: forbidden")
+
+    const balanceBefore = await provider.getBalance(user1.address)
+    await positionManager.setOrderKeeper(user1.address, true)
+    await positionManager.connect(user1).submitPricesAndExecuteSwapOrder(0, 0, user0.address, orderIndex, user1.address)
+    expect((await orderBook.swapOrders(user0.address, orderIndex))[0]).to.be.equal(ethers.constants.AddressZero)
+    const balanceAfter = await provider.getBalance(user1.address)
+    expect(balanceAfter.gt(balanceBefore)).to.be.true
+  })
+
   it("executeIncreaseOrder", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
@@ -684,6 +722,102 @@ describe("PositionManager", function () {
     await positionManager.connect(user1).executeIncreaseOrder(user0.address, orderIndex, user1.address)
   })
 
+  it("submitPricesAndExecuteIncreaseOrder", async () => {
+    const timelock = await deployTimelock()
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(positionManager.address, true)
+    await timelock.setShouldToggleIsLeverageEnabled(true)
+    await positionManager.setInLegacyMode(true)
+    await router.addPlugin(positionManager.address)
+    await router.connect(user0).approvePlugin(positionManager.address)
+
+    const executionFee = expandDecimals(1, 17) // 0.1 WETH
+    await dai.mint(user0.address, expandDecimals(20000, 18))
+    await dai.connect(user0).approve(router.address, expandDecimals(20000, 18))
+
+    const createIncreaseOrder = (amountIn = expandDecimals(1000, 18), sizeDelta = toUsd(2000), isLong = true) => {
+      const path = isLong ? [dai.address, btc.address] : [dai.address]
+      const collateralToken = isLong ? btc.address : dai.address
+      return orderBook.connect(user0).createIncreaseOrder(
+        path,
+        amountIn,
+        btc.address, // indexToken
+        0, // minOut
+        sizeDelta,
+        collateralToken,
+        isLong,
+        toUsd(59000), // triggerPrice
+        true, // triggerAboveThreshold
+        executionFee,
+        false, // shouldWrap
+        {value: executionFee}
+      );
+    }
+
+    await createIncreaseOrder()
+    let orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    expect(await positionManager.isOrderKeeper(user1.address)).to.be.false
+    await expect(positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address))
+      .to.be.revertedWith("PositionManager: forbidden")
+
+    const balanceBefore = await provider.getBalance(user1.address)
+    await positionManager.setOrderKeeper(user1.address, true)
+    expect(await positionManager.isOrderKeeper(user1.address)).to.be.true
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+    expect((await orderBook.increaseOrders(user0.address, orderIndex))[0]).to.be.equal(ethers.constants.AddressZero)
+    const balanceAfter = await provider.getBalance(user1.address)
+    expect(balanceAfter.gt(balanceBefore)).to.be.true
+
+    position = await vault.getPosition(user0.address, btc.address, btc.address, true)
+    expect(position[0]).to.be.equal(toUsd(2000))
+
+    // by default validation is enabled
+    expect(await positionManager.shouldValidateIncreaseOrder()).to.be.true
+
+    // should revert on deposits
+    await createIncreaseOrder(expandDecimals(100, 18), 0)
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    const badOrderIndex1 = orderIndex
+    await expect(positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address))
+      .to.be.revertedWith("PositionManager: long deposit")
+
+    // should block if leverage is decreased
+    await createIncreaseOrder(expandDecimals(100, 18), toUsd(100))
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    const badOrderIndex2 = orderIndex
+    await expect(positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address))
+      .to.be.revertedWith("PositionManager: long leverage decrease")
+
+    // should not block if leverage is not decreased
+    await createIncreaseOrder()
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+
+    await positionManager.setShouldValidateIncreaseOrder(false)
+    expect(await positionManager.shouldValidateIncreaseOrder()).to.be.false
+
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, badOrderIndex1, user1.address)
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, badOrderIndex2, user1.address)
+
+    // shorts
+    await positionManager.setShouldValidateIncreaseOrder(true)
+    expect(await positionManager.shouldValidateIncreaseOrder()).to.be.true
+
+    await createIncreaseOrder(expandDecimals(1000, 18), toUsd(2000), false)
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+
+    // should not block deposits for shorts
+    await createIncreaseOrder(expandDecimals(100, 18), 0, false)
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+
+    await createIncreaseOrder(expandDecimals(100, 18), toUsd(100), false)
+    orderIndex = (await orderBook.increaseOrdersIndex(user0.address)) - 1
+    await positionManager.connect(user1).submitPricesAndExecuteIncreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+  })
+
   it("executeDecreaseOrder", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
@@ -725,6 +859,47 @@ describe("PositionManager", function () {
     expect(position[0]).to.be.equal(0)
   })
 
+  it("submitPricesAndExecuteDecreaseOrder", async () => {
+    const timelock = await deployTimelock()
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(positionManager.address, true)
+    await timelock.setShouldToggleIsLeverageEnabled(true)
+    await positionManager.setInLegacyMode(true)
+    await router.addPlugin(positionManager.address)
+    await router.connect(user0).approvePlugin(positionManager.address)
+
+    await positionManager.connect(user0).increasePositionETH([bnb.address], bnb.address, 0, toUsd(1000), true, toUsd(100000), { value: expandDecimals(1, 18) })
+
+    let position = await vault.getPosition(user0.address, bnb.address, bnb.address, true)
+
+    const executionFee = expandDecimals(1, 17) // 0.1 WETH
+    await orderBook.connect(user0).createDecreaseOrder(
+      bnb.address,
+      position[0],
+      bnb.address,
+      position[1],
+      true,
+      toUsd(290),
+      true,
+      {value: executionFee}
+    );
+
+    const orderIndex = (await orderBook.decreaseOrdersIndex(user0.address)) - 1
+    await expect(positionManager.connect(user1).submitPricesAndExecuteDecreaseOrder(0, 0, user0.address, orderIndex, user1.address))
+      .to.be.revertedWith("PositionManager: forbidden")
+
+    const balanceBefore = await provider.getBalance(user1.address)
+    await positionManager.setOrderKeeper(user1.address, true)
+    await positionManager.connect(user1).submitPricesAndExecuteDecreaseOrder(0, 0, user0.address, orderIndex, user1.address)
+    expect((await orderBook.decreaseOrders(user0.address, orderIndex))[0]).to.be.equal(ethers.constants.AddressZero)
+    const balanceAfter = await provider.getBalance(user1.address)
+    expect(balanceAfter.gt(balanceBefore)).to.be.true
+
+    position = await vault.getPosition(user0.address, bnb.address, bnb.address, true)
+    expect(position[0]).to.be.equal(0)
+  })
+
   it("liquidatePosition", async () => {
     const timelock = await deployTimelock()
     await vault.setGov(timelock.address)
@@ -752,5 +927,38 @@ describe("PositionManager", function () {
 
     expect(await positionManager.isLiquidator(user1.address)).to.be.true
     await positionManager.connect(user1).liquidatePosition(user0.address, bnb.address, bnb.address, true, user1.address)
+  })
+
+  it("submitPricesAndLiquidatePosition", async () => {
+    const timelock = await deployTimelock()
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(positionManager.address, true)
+    await timelock.setShouldToggleIsLeverageEnabled(true)
+
+    expect(await positionManager.isLiquidator(user1.address)).to.be.false
+    await expect(positionManager.connect(user1).submitPricesAndLiquidatePosition(0, 0, user1.address, bnb.address, bnb.address, true, user0.address))
+      .to.be.revertedWith("PositionManager: forbidden")
+
+    await positionManager.setInLegacyMode(true)
+    await router.addPlugin(positionManager.address)
+    await router.connect(user0).approvePlugin(positionManager.address)
+
+    await positionManager.connect(user0).increasePositionETH([bnb.address], bnb.address, 0, toUsd(1000), true, toUsd(100000), { value: expandDecimals(1, 18) })
+    let position = await vault.getPosition(user0.address, bnb.address, bnb.address, true)
+
+    expect(position[0]).gt(0)
+
+    await bnbPriceFeed.setLatestAnswer(toChainlinkPrice(200))
+
+    await expect(positionManager.connect(user1).submitPricesAndLiquidatePosition(0, 0, user0.address, bnb.address, bnb.address, true, user1.address))
+      .to.be.revertedWith("PositionManager: forbidden")
+
+    await positionManager.setLiquidator(user1.address, true)
+
+    expect(await positionManager.isLiquidator(user1.address)).to.be.true
+    await positionManager.connect(user1).submitPricesAndLiquidatePosition(0, 0, user0.address, bnb.address, bnb.address, true, user1.address)
+    position = await vault.getPosition(user0.address, bnb.address, bnb.address, true)
+    expect(position[0]).eq(0)
   })
 })

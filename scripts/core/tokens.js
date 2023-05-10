@@ -18,7 +18,7 @@ module.exports = {
       isStrictStable: false,
       tokenWeight: 27000,
       minProfitBps: 0,
-      maxUsdfAmount: 50 * 1000 *1000,
+      maxUsdfAmount: 50 * 1000 * 1000,
       bufferAmount: 450,
       isStable: false,
       isShortable: true,
@@ -30,6 +30,7 @@ module.exports = {
       relativePnlList: [0, 25, 50, 100, 1000, 5000],
       positionFeeBpsList: [15, 15, 20, 30, 50, 100],
       profitFeeBpsList: [500, 500, 500, 500, 500, 1000],
+      faucetAmount: 0.004,
     },
     eth: {
       name: "eth",
@@ -54,6 +55,7 @@ module.exports = {
       relativePnlList: [0, 25, 50, 100, 1000, 5000],
       positionFeeBpsList: [15, 15, 20, 30, 50, 100],
       profitFeeBpsList: [500, 500, 500, 500, 500, 1000],
+      faucetAmount: 0.05,
     },
     feth: {
       name: "feth",
@@ -78,6 +80,7 @@ module.exports = {
       relativePnlList: [0, 25, 50, 100, 1000, 5000],
       positionFeeBpsList: [15, 15, 20, 30, 50, 100],
       profitFeeBpsList: [500, 500, 500, 500, 500, 1000],
+      faucetAmount: 0.05,
     },
     usdc: {
       name: "usdc",
@@ -99,6 +102,7 @@ module.exports = {
       relativePnlList: [],
       positionFeeBpsList: [],
       profitFeeBpsList: [],
+      faucetAmount: 100,
     },
     usdt: {
       name: "usdt",
@@ -120,6 +124,7 @@ module.exports = {
       relativePnlList: [],
       positionFeeBpsList: [],
       profitFeeBpsList: [],
+      faucetAmount: 100,
     },
     nativeToken: {
       name: "weth",

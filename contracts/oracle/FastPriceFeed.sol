@@ -265,7 +265,7 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
         }
     }
 
-    function setPricesWithBits(uint256 _priceBits, uint256 _timestamp) external onlyUpdater {
+    function setPricesWithBits(uint256 _priceBits, uint256 _timestamp) external override onlyUpdater {
         _setPricesWithBits(_priceBits, _timestamp);
     }
 

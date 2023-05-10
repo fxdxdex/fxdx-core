@@ -12,7 +12,7 @@ async function main() {
   const vault = await contractAt("Vault", addresses.vault)
   // const timelock = await contractAt("Timelock", await vault.gov(), signer)
   // const router = await contractAt("Router", addresses.router, signer)
-  const timelock = await contractAt("Timelock", await vault.gov())
+  // const timelock = await contractAt("Timelock", await vault.gov())
   const router = await contractAt("Router", addresses.router)
   const weth = await contractAt("WETH", tokens.nativeToken.address)
   const orderBook = await contractAt("OrderBook", addresses.orderBook)
@@ -40,6 +40,7 @@ async function main() {
   // const positionManager = await contractAt("PositionManager", addresses.positionManager)
   await sendTxn(positionManager.setOrderKeeper(orderKeeper.address, true), "positionManager.setOrderKeeper(orderKeeper)")
   await sendTxn(positionManager.setLiquidator(liquidator.address, true), "positionManager.setLiquidator(liquidator)")
+  await sendTxn(positionManager.setShouldValidateIncreaseOrder(false), "positionManager.setShouldValidateIncreaseOrder(false)")
   // await sendTxn(timelock.setContractHandler(positionManager.address, true), "timelock.setContractHandler(positionManager)")
   // await sendTxn(timelock.setLiquidator(vault.address, positionManager.address, true), "timelock.setLiquidator(vault, positionManager, true)")
   await sendTxn(router.addPlugin(positionManager.address), "router.addPlugin(positionManager)")
@@ -48,6 +49,8 @@ async function main() {
     const partnerContract = partnerContracts[i]
     await sendTxn(positionManager.setPartner(partnerContract, true), "positionManager.setPartner(partnerContract)")
   }
+
+  // await sendTxn(positionManager.setFastPriceFeed(addresses.fastPriceFeed), "positionManager.setFastPriceFeed")
 }
 
 main()

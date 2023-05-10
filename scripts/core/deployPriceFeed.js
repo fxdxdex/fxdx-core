@@ -45,6 +45,7 @@ async function deployPriceFeed() {
   ]
   const tokenManager = { address: addresses.tokenManager }
 
+  const positionManager = await contractAt("PositionManager", addresses.positionManager)
   const positionRouter = await contractAt("PositionRouter", addresses.positionRouter)
   const swapRouter = await contractAt("SwapRouter", addresses.swapRouter)
   const liquidityRouter = await contractAt("LiquidityRouter", addresses.liquidityRouter)
@@ -68,6 +69,12 @@ async function deployPriceFeed() {
 
   await sendTxn(secondaryPriceFeed.initialize(1, signers, updaters), "secondaryPriceFeed.initialize")
   await sendTxn(secondaryPriceFeed.setMaxTimeDeviation(60 * 60), "secondaryPriceFeed.setMaxTimeDeviation")
+  await sendTxn(
+    secondaryPriceFeed.setUpdater(positionManager.address, true),
+    "secondaryPriceFeed.setUpdater(positionManger, true)"
+  )
+
+  await sendTxn(positionManager.setFastPriceFeed(secondaryPriceFeed.address), "positionManager.setFastPriceFeed")
 
   await sendTxn(positionRouter.setPositionKeeper(secondaryPriceFeed.address, true), "positionRouter.setPositionKeeper(secondaryPriceFeed)")
   await sendTxn(swapRouter.setRequestKeeper(secondaryPriceFeed.address, true), "swapRouter.setRequestKeeper(secondaryPriceFeed)")

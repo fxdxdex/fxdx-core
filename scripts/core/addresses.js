@@ -30,7 +30,9 @@ module.exports = {
     vaultUtils: "0x50e202e5fbcfF18D0278b3fDeBFD5ECFC917422a",
     orderBook: "0x298c3F8e53ec8305325c45d1BB62A73a228C0b02",
     swapRouter: "0xBda3EEC734F9b5AEf9Cc093C8DE4434A5Abf6665",
-    positionManager: "0x20DD2D956CdB5Fd690f48B83Eb6EAd374da3e884",
+    positionManagerOld: "0x20DD2D956CdB5Fd690f48B83Eb6EAd374da3e884",
+    positionManagerBulk: "0x5253F86F778670b52A478FA4350ceb6544fCe82e",
+    positionManager: "0x19cf926819d601Be62ec83E2F4dB18C84E8fcB8D",
     positionRouter: "0xd0B76C37a492E221855D6F103aE8E8Db98D2821B",
     referralReader: "0x8E2a008f0c44C91ea45fE147315e2B54cd8FED80",
     referralStorage: "0xCf11BCE7Bd96c42fe7E0c33F004d786642664A29",
@@ -64,5 +66,6 @@ module.exports = {
     flpBalance: "0xde652C3A33efcd01345Ee5a9B15Ff0A2702ACc15",
     fastPriceEvents: "0xD37d4253642E9dA42c1C49f6069851BAeAF87582",
     fastPriceFeed: "0xBa4c95CBb794d6302B66108967bd9E77d9442a84",
+    faucetManager: "0xbd7A8b168e01103f8EDA4F240b484ba13bB309e7",
   }
 }

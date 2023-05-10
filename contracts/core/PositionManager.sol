@@ -8,10 +8,12 @@ import "./interfaces/IOrderBook.sol";
 
 import "../peripherals/interfaces/ITimelock.sol";
 import "./BasePositionManager.sol";
+import "../oracle/interfaces/IFastPriceFeed.sol";
 
 contract PositionManager is BasePositionManager {
 
     address public orderBook;
+    address public fastPriceFeed;
     bool public inLegacyMode;
 
     bool public shouldValidateIncreaseOrder = true;
@@ -49,6 +51,10 @@ contract PositionManager is BasePositionManager {
         address _orderBook
     ) public BasePositionManager(_vault, _router, _weth, _depositFee) {
         orderBook = _orderBook;
+    }
+
+    function setFastPriceFeed(address _fastPriceFeed) external onlyAdmin {
+        fastPriceFeed = _fastPriceFeed;
     }
 
     function setOrderKeeper(address _account, bool _isActive) external onlyAdmin {
@@ -207,11 +213,82 @@ contract PositionManager is BasePositionManager {
         ITimelock(timelock).disableLeverage(_vault);
     }
 
+    function submitPricesAndLiquidatePosition(
+        uint256 _priceBits,
+        uint256 _timestamp,
+        address _account,
+        address _collateralToken,
+        address _indexToken,
+        bool _isLong,
+        address _feeReceiver
+    ) external nonReentrant onlyLiquidator {
+        if (fastPriceFeed != address(0) && _priceBits > 0) {
+            IFastPriceFeed(fastPriceFeed).setPricesWithBits(_priceBits, _timestamp);
+        }
+
+        address _vault = vault;
+        address timelock = IVault(_vault).gov();
+
+        ITimelock(timelock).enableLeverage(_vault);
+        IVault(_vault).liquidatePosition(_account, _collateralToken, _indexToken, _isLong, _feeReceiver);
+        ITimelock(timelock).disableLeverage(_vault);
+    }
+
     function executeSwapOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
         IOrderBook(orderBook).executeSwapOrder(_account, _orderIndex, _feeReceiver);
     }
 
+    function submitPricesAndExecuteSwapOrder(
+        uint256 _priceBits,
+        uint256 _timestamp,
+        address _account,
+        uint256 _orderIndex,
+        address payable _feeReceiver
+    ) external onlyOrderKeeper {
+        if (fastPriceFeed != address(0) && _priceBits > 0) {
+            IFastPriceFeed(fastPriceFeed).setPricesWithBits(_priceBits, _timestamp);
+        }
+
+        IOrderBook(orderBook).executeSwapOrder(_account, _orderIndex, _feeReceiver);
+    }
+
     function executeIncreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
+        _executeIncreaseOrder(_account, _orderIndex, _feeReceiver);
+    }
+
+    function submitPricesAndExecuteIncreaseOrder(
+        uint256 _priceBits,
+        uint256 _timestamp,
+        address _account,
+        uint256 _orderIndex,
+        address payable _feeReceiver
+    ) external onlyOrderKeeper {
+        if (fastPriceFeed != address(0) && _priceBits > 0) {
+            IFastPriceFeed(fastPriceFeed).setPricesWithBits(_priceBits, _timestamp);
+        }
+
+        _executeIncreaseOrder(_account, _orderIndex, _feeReceiver);
+    }
+
+    function executeDecreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
+        _executeDecreaseOrder(_account, _orderIndex, _feeReceiver);
+    }
+
+    function submitPricesAndExecuteDecreaseOrder(
+        uint256 _priceBits,
+        uint256 _timestamp,
+        address _account,
+        uint256 _orderIndex,
+        address payable _feeReceiver
+    ) external onlyOrderKeeper {
+        if (fastPriceFeed != address(0) && _priceBits > 0) {
+            IFastPriceFeed(fastPriceFeed).setPricesWithBits(_priceBits, _timestamp);
+        }
+
+        _executeDecreaseOrder(_account, _orderIndex, _feeReceiver);
+    }
+
+    function _executeIncreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) internal {
         (uint256 sizeDelta, address _indexToken) =  _validateIncreaseOrder(_account, _orderIndex);
 
         address _vault = vault;
@@ -224,7 +301,7 @@ contract PositionManager is BasePositionManager {
         _emitIncreasePositionReferral(_account, _indexToken, sizeDelta);
     }
 
-    function executeDecreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
+    function _executeDecreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) internal {
         address _vault = vault;
         address timelock = IVault(_vault).gov();
 
