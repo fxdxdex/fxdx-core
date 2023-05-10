@@ -356,14 +356,15 @@ contract Vault is ReentrancyGuard, IVault {
         whitelistedTokenCount = whitelistedTokenCount.sub(1);
 
         // remove the _token from allWhitelistedTokens
+        uint256 tokensLength = allWhitelistedTokens.length;
         uint256 index = 0;
-        for (uint256 i = 0; i < allWhitelistedTokens.length; i++) {
+        for (uint256 i = 0; i < tokensLength; i++) {
             if (_token == allWhitelistedTokens[i]) {
                 index = i;
                 break;
             }
         }
-        allWhitelistedTokens[index] = allWhitelistedTokens[allWhitelistedTokens.length - 1];
+        allWhitelistedTokens[index] = allWhitelistedTokens[tokensLength - 1];
         allWhitelistedTokens.pop();
     }
 
