@@ -92,6 +92,11 @@ contract TokenManager is ReentrancyGuard {
             signers.push(_account);
         } else if (!_isSigner && isSigner[_account]) {
             uint256 _length = signers.length;
+            require(
+                minAuthorizations < _length,
+                "TokenManager: minAuthorizations should not be larger than signers length"
+            );
+
             uint256 index = 0;
             for (uint256 i = 0; i < _length; i++) {
                 if (_account == signers[i]) {
@@ -130,6 +135,10 @@ contract TokenManager is ReentrancyGuard {
         _validateAuthorization(action);
 
         if (_target == address(this)) {
+            require(
+                _minAuthorizations <= signers.length,
+                "TokenManager: _minAuthorizations should not be larger than signers length"
+            );
             minAuthorizations = _minAuthorizations;
         } else {
             IFastPriceFeed(_target).setMinAuthorizations(_minAuthorizations);

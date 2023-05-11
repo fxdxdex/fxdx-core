@@ -145,6 +145,17 @@ describe("TokenManager", function () {
     await tokenManager.connect(signer2).setSigner(user1.address, false, 2)
     expect(await tokenManager.isSigner(user1.address)).eq(false)
     expect(await tokenManager.signersLength()).eq(3)
+
+    await tokenManager.connect(signer0).signalSetSigner(signer2.address, false)
+    await tokenManager.connect(signer1).signSetSigner(signer2.address, false, 3)
+    await tokenManager.connect(signer1).setSigner(signer2.address, false, 3)
+    expect(await tokenManager.isSigner(signer2.address)).eq(false)
+    expect(await tokenManager.signersLength()).eq(2)
+
+    await tokenManager.connect(signer0).signalSetSigner(signer1.address, false)
+    await tokenManager.connect(signer1).signSetSigner(signer1.address, false, 4)
+    await expect(tokenManager.connect(signer1).setSigner(signer1.address, false, 4))
+      .to.be.revertedWith("TokenManager: minAuthorizations should not be larger than signers length")
   })
 
   it("signalSetMinAuthorizations", async () => {
@@ -213,6 +224,12 @@ describe("TokenManager", function () {
     await tokenManager.connect(signer2).signSetMinAuthorizations(tokenManager.address, 3, 2)
     await tokenManager.connect(signer2).setMinAuthorizations(tokenManager.address, 3, 2)
     expect(await tokenManager.minAuthorizations()).eq(3)
+
+    await tokenManager.connect(signer0).signalSetMinAuthorizations(tokenManager.address, 4)
+    await tokenManager.connect(signer1).signSetMinAuthorizations(tokenManager.address, 4, 3)
+    await tokenManager.connect(signer2).signSetMinAuthorizations(tokenManager.address, 4, 3)
+    await expect(tokenManager.connect(signer2).setMinAuthorizations(tokenManager.address, 4, 3))
+      .to.be.revertedWith("TokenManager: _minAuthorizations should not be larger than signers length")
   })
 
   it("signalApprove", async () => {
