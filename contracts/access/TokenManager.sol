@@ -8,6 +8,7 @@ import "../libraries/token/ERC721/IERC721.sol";
 import "../libraries/utils/ReentrancyGuard.sol";
 
 import "../peripherals/interfaces/ITimelock.sol";
+import "../oracle/interfaces/IFastPriceFeed.sol";
 
 contract TokenManager is ReentrancyGuard {
     using SafeMath for uint256;
@@ -24,6 +25,8 @@ contract TokenManager is ReentrancyGuard {
     mapping (bytes32 => bool) public pendingActions;
     mapping (address => mapping (bytes32 => bool)) public signedActions;
 
+    event SignalSetMinAuthorizations(address target, uint256 minAuthorizations, bytes32 action, uint256 nonce);
+    event SignalSetSigner(address account, bool isSigner, bytes32 action, uint256 nonce);
     event SignalApprove(address token, address spender, uint256 amount, bytes32 action, uint256 nonce);
     event SignalApproveNFT(address token, address spender, uint256 tokenId, bytes32 action, uint256 nonce);
     event SignalApproveNFTs(address token, address spender, uint256[] tokenIds, bytes32 action, uint256 nonce);
@@ -61,6 +64,77 @@ contract TokenManager is ReentrancyGuard {
 
     function signersLength() public view returns (uint256) {
         return signers.length;
+    }
+
+    function signalSetSigner(address _account, bool _isSigner) external nonReentrant onlySigner {
+        actionsNonce++;
+        uint256 nonce = actionsNonce;
+        bytes32 action = keccak256(abi.encodePacked("setSigner", _account, _isSigner, nonce));
+        _setPendingAction(action, nonce);
+        signedActions[msg.sender][action] = true;
+        emit SignalSetSigner(_account, _isSigner, action, nonce);
+    }
+
+    function signSetSigner(address _account, bool _isSigner, uint256 _nonce) external nonReentrant onlySigner {
+        bytes32 action = keccak256(abi.encodePacked("setSigner", _account, _isSigner, _nonce));
+        _validateAction(action);
+        require(!signedActions[msg.sender][action], "TokenManager: already signed");
+        signedActions[msg.sender][action] = true;
+        emit SignAction(action, _nonce);
+    }
+
+    function setSigner(address _account, bool _isSigner, uint256 _nonce) external nonReentrant onlySigner {
+        bytes32 action = keccak256(abi.encodePacked("setSigner", _account, _isSigner, _nonce));
+        _validateAction(action);
+        _validateAuthorization(action);
+
+        if (_isSigner && !isSigner[_account]) {
+            signers.push(_account);
+        } else if (!_isSigner && isSigner[_account]) {
+            uint256 _length = signers.length;
+            uint256 index = 0;
+            for (uint256 i = 0; i < _length; i++) {
+                if (_account == signers[i]) {
+                    index = i;
+                    break;
+                }
+            }
+            signers[index] = signers[_length - 1];
+            signers.pop();
+        }
+        isSigner[_account] = _isSigner;
+
+        _clearAction(action, _nonce);
+    }
+
+    function signalSetMinAuthorizations(address _target, uint256 _minAuthorizations) external nonReentrant onlySigner {
+        actionsNonce++;
+        uint256 nonce = actionsNonce;
+        bytes32 action = keccak256(abi.encodePacked("setMinAuthorizations", _target, _minAuthorizations, nonce));
+        _setPendingAction(action, nonce);
+        signedActions[msg.sender][action] = true;
+        emit SignalSetMinAuthorizations(_target, _minAuthorizations, action, nonce);
+    }
+
+    function signSetMinAuthorizations(address _target, uint256 _minAuthorizations, uint256 _nonce) external nonReentrant onlySigner {
+        bytes32 action = keccak256(abi.encodePacked("setMinAuthorizations", _target, _minAuthorizations, _nonce));
+        _validateAction(action);
+        require(!signedActions[msg.sender][action], "TokenManager: already signed");
+        signedActions[msg.sender][action] = true;
+        emit SignAction(action, _nonce);
+    }
+
+    function setMinAuthorizations(address _target, uint256 _minAuthorizations, uint256 _nonce) external nonReentrant onlySigner {
+        bytes32 action = keccak256(abi.encodePacked("setMinAuthorizations", _target, _minAuthorizations, _nonce));
+        _validateAction(action);
+        _validateAuthorization(action);
+
+        if (_target == address(this)) {
+            minAuthorizations = _minAuthorizations;
+        } else {
+            IFastPriceFeed(_target).setMinAuthorizations(_minAuthorizations);
+        }
+        _clearAction(action, _nonce);
     }
 
     function signalApprove(address _token, address _spender, uint256 _amount) external nonReentrant onlyAdmin {
@@ -168,7 +242,11 @@ contract TokenManager is ReentrancyGuard {
         _validateAction(action);
         _validateAuthorization(action);
 
-        ITimelock(_target).setAdmin(_admin);
+        if (_target == address(this)) {
+            admin = _admin;
+        } else {
+            ITimelock(_target).setAdmin(_admin);
+        }
         _clearAction(action, _nonce);
     }
 

@@ -1,17 +1,13 @@
 const { expect, use } = require("chai")
 const { solidity } = require("ethereum-waffle")
 const { deployContract } = require("../shared/fixtures")
-const { expandDecimals, getBlockTime, increaseTime, mineBlock, reportGasUsed, print } = require("../shared/utilities")
-const { toChainlinkPrice } = require("../shared/chainlink")
-const { toUsd, toNormalizedPrice } = require("../shared/units")
+const { expandDecimals, increaseTime, mineBlock } = require("../shared/utilities")
 
 use(solidity)
 
-const { AddressZero } = ethers.constants
-
 describe("TokenManager", function () {
   const provider = waffle.provider
-  const [wallet, user0, user1, user2, user3, signer0, signer1, signer2] = provider.getWallets()
+  const [wallet, user0, user1, user2, signer0, signer1, signer2, fastPriceEvents, positionRouter, swapRouter, liquidityRouter] = provider.getWallets()
   let fxdx
   let eth
   let tokenManager
@@ -20,6 +16,7 @@ describe("TokenManager", function () {
   let nft0
   let nft1
   const nftId = 17
+  let fastPriceFeed
 
   beforeEach(async () => {
     fxdx = await deployContract("FXDX", [])
@@ -49,6 +46,20 @@ describe("TokenManager", function () {
       user2.address,
       expandDecimals(1000, 18)
     ])
+
+    fastPriceFeed = await deployContract("FastPriceFeed", [
+      5 * 60, // _priceDuration
+      120 * 60, // _maxPriceUpdateDelay
+      2, // _minBlockInterval
+      250, // _maxDeviationBasisPoints
+      fastPriceEvents.address, // _fastPriceEvents
+      tokenManager.address, // _tokenManager
+      positionRouter.address, // _positionRouter
+      swapRouter.address, // _swapRouter
+      liquidityRouter.address // _liquidityRouter
+    ])
+
+    await fastPriceFeed.initialize(2, [signer0.address, signer1.address], [user0.address, user1.address])
   })
 
   it("inits", async () => {
@@ -64,6 +75,144 @@ describe("TokenManager", function () {
     expect(await tokenManager.isSigner(signer0.address)).eq(true)
     expect(await tokenManager.isSigner(signer1.address)).eq(true)
     expect(await tokenManager.isSigner(signer2.address)).eq(true)
+  })
+
+  it("signalSetSigner", async () => {
+    await expect(tokenManager.connect(user0).signalSetSigner(user1.address, true))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).signalSetSigner(user1.address, true))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await tokenManager.connect(signer0).signalSetSigner(user1.address, true)
+  })
+
+  it("signSetSigner", async () => {
+    await expect(tokenManager.connect(user0).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer1).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await tokenManager.connect(signer1).signalSetSigner(user1.address, true)
+
+    await expect(tokenManager.connect(user0).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer1).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: already signed")
+
+    await tokenManager.connect(signer2).signSetSigner(user1.address, true, 1)
+
+    await expect(tokenManager.connect(signer2).signSetSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: already signed")
+  })
+
+  it("setSigner", async () => {
+    await expect(tokenManager.connect(user0).setSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).setSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer0).setSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await tokenManager.connect(signer0).signalSetSigner(user1.address, true)
+
+    await expect(tokenManager.connect(signer0).setSigner(user0.address, true, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setSigner(user1.address, true, 2))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setSigner(user1.address, true, 1))
+      .to.be.revertedWith("TokenManager: insufficient authorization")
+
+    await tokenManager.connect(signer2).signSetSigner(user1.address, true, 1)
+
+    expect(await tokenManager.isSigner(user1.address)).eq(false)
+    expect(await tokenManager.signersLength()).eq(3)
+    await tokenManager.connect(signer2).setSigner(user1.address, true, 1)
+    expect(await tokenManager.isSigner(user1.address)).eq(true)
+    expect(await tokenManager.signersLength()).eq(4)
+
+    await tokenManager.connect(signer0).signalSetSigner(user1.address, false)
+    await tokenManager.connect(signer2).signSetSigner(user1.address, false, 2)
+    await tokenManager.connect(signer2).setSigner(user1.address, false, 2)
+    expect(await tokenManager.isSigner(user1.address)).eq(false)
+    expect(await tokenManager.signersLength()).eq(3)
+  })
+
+  it("signalSetMinAuthorizations", async () => {
+    await expect(tokenManager.connect(user0).signalSetMinAuthorizations(fastPriceFeed.address, 4))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).signalSetMinAuthorizations(fastPriceFeed.address, 4))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await tokenManager.connect(signer0).signalSetMinAuthorizations(fastPriceFeed.address, 4)
+  })
+
+  it("signSetMinAuthorizations", async () => {
+    await expect(tokenManager.connect(user0).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer1).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await tokenManager.connect(signer1).signalSetMinAuthorizations(fastPriceFeed.address, 4)
+
+    await expect(tokenManager.connect(user0).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer1).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: already signed")
+
+    await tokenManager.connect(signer2).signSetMinAuthorizations(fastPriceFeed.address, 4, 1)
+
+    await expect(tokenManager.connect(signer2).signSetMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: already signed")
+  })
+
+  it("setMinAuthorizations", async () => {
+    await expect(tokenManager.connect(user0).setMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).setMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer0).setMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await tokenManager.connect(signer0).signalSetMinAuthorizations(fastPriceFeed.address, 4)
+
+    await expect(tokenManager.connect(signer0).setMinAuthorizations(user0.address, 4, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setMinAuthorizations(fastPriceFeed.address, 4, 2))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setMinAuthorizations(fastPriceFeed.address, 4, 1))
+      .to.be.revertedWith("TokenManager: insufficient authorization")
+
+    await tokenManager.connect(signer2).signSetMinAuthorizations(fastPriceFeed.address, 4, 1)
+
+    expect(await fastPriceFeed.minAuthorizations()).eq(2)
+    await tokenManager.connect(signer2).setMinAuthorizations(fastPriceFeed.address, 4, 1)
+    expect(await fastPriceFeed.minAuthorizations()).eq(4)
+
+    expect(await tokenManager.minAuthorizations()).eq(2)
+    await tokenManager.connect(signer0).signalSetMinAuthorizations(tokenManager.address, 3)
+    await tokenManager.connect(signer2).signSetMinAuthorizations(tokenManager.address, 3, 2)
+    await tokenManager.connect(signer2).setMinAuthorizations(tokenManager.address, 3, 2)
+    expect(await tokenManager.minAuthorizations()).eq(3)
   })
 
   it("signalApprove", async () => {
@@ -400,6 +549,37 @@ describe("TokenManager", function () {
     expect(await timelock.admin()).eq(wallet.address)
     await tokenManager.connect(signer2).setAdmin(timelock.address, user1.address, 1)
     expect(await timelock.admin()).eq(user1.address)
+  })
+
+  it("setAdmin self", async () => {
+    await expect(tokenManager.connect(user0).setAdmin(tokenManager.address, user1.address, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(wallet).setAdmin(tokenManager.address, user1.address, 1))
+      .to.be.revertedWith("TokenManager: forbidden")
+
+    await expect(tokenManager.connect(signer0).setAdmin(tokenManager.address, user1.address, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await tokenManager.connect(signer0).signalSetAdmin(tokenManager.address, user1.address)
+
+    await expect(tokenManager.connect(signer0).setAdmin(user0.address, user1.address, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setAdmin(tokenManager.address, user0.address, 1))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setAdmin(tokenManager.address, user1.address, 2))
+      .to.be.revertedWith("TokenManager: action not signalled")
+
+    await expect(tokenManager.connect(signer0).setAdmin(tokenManager.address, user1.address, 1))
+      .to.be.revertedWith("TokenManager: insufficient authorization")
+
+    await tokenManager.connect(signer2).signSetAdmin(tokenManager.address, user1.address, 1)
+
+    expect(await tokenManager.admin()).eq(wallet.address)
+    await tokenManager.connect(signer2).setAdmin(tokenManager.address, user1.address, 1)
+    expect(await tokenManager.admin()).eq(user1.address)
   })
 
   it("signalSetGov", async () => {

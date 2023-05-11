@@ -214,7 +214,7 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
         lastUpdatedAt = _lastUpdatedAt;
     }
 
-    function setMinAuthorizations(uint256 _minAuthorizations) external onlyTokenManager {
+    function setMinAuthorizations(uint256 _minAuthorizations) external override onlyTokenManager {
         minAuthorizations = _minAuthorizations;
     }
 
