@@ -15,3 +15,6 @@ Install packages:
 
 ## Run Tests
 `npx hardhat test`
+
+##
+The smart contracts were audited by The Arcadia Group. [Report](https://github.com/TheArcadiaGroup/publications/blob/main/audits/FXDX%20Final.pdf)
