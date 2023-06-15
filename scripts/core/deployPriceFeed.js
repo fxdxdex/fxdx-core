@@ -10,9 +10,12 @@ async function deployPriceFeed() {
   // const { btc, eth, usdc, link, uni, usdt, mim, frax, dai } = tokens
   // const tokenArr = [btc, eth, usdc, link, uni, usdt, mim, frax, dai]
   // const fastPriceTokens = [btc, eth, link, uni]
-  const { btc, eth, feth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, feth, usdc, usdt]
-  const fastPriceTokens = [btc, eth, feth]
+  // const { btc, eth, feth, usdc, usdt } = tokens
+  // const tokenArr = [btc, eth, feth, usdc, usdt]
+  // const fastPriceTokens = [btc, eth, feth]
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
+  const fastPriceTokens = [btc, eth]
 
   if (fastPriceTokens.find(t => !t.fastPricePrecision)) {
     throw new Error("Invalid price precision")
@@ -28,20 +31,15 @@ async function deployPriceFeed() {
 
   const updater1 = { address: addresses.priceSender }
   // const updater2 = { address: "0x13e12390fFFc8dA71708bbc90F0Bf2c07FbE6B7A" }
-  const keeper1 = { address: addresses.positionsKeeper }
+  // const keeper1 = { address: addresses.positionsKeeper }
   // const keeper2 = { address: "0xA73731077B511b39853Fb149AfeC948d3DB9BA71" }
-  const updaters = [updater1.address, /*updater2.address, */keeper1.address/*, keeper2.address*/]
+  const updaters = [updater1.address, /*updater2.address, keeper1.address, keeper2.address*/]
 
   const signers = [
-    addresses.signer1, // coinflipcanada
-    addresses.signer2, // G Account 1
-    addresses.signer3, // G Account 2
-    addresses.signer4, // kr
-    addresses.signer5, // quat
-    addresses.signer6, // xhiroz
-    addresses.signer7, // Dovey
-    addresses.signer8, // Han Wen
-    addresses.signer9 // Krunal Amin
+    addresses.signer1,
+    addresses.signer2,
+    addresses.signer3,
+    addresses.signer4,
   ]
   const tokenManager = { address: addresses.tokenManager }
 
@@ -55,7 +53,7 @@ async function deployPriceFeed() {
 
   // const chainlinkFlags = { address: "0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83" }
   const secondaryPriceFeed = await deployContract("FastPriceFeed", [
-    2 * 60, // _priceDuration
+    5 * 60, // _priceDuration
     60 * 60, // _maxPriceUpdateDelay
     0, // _minBlockInterval
     750, // _maxDeviationBasisPoints
@@ -67,7 +65,7 @@ async function deployPriceFeed() {
   ])
   // const secondaryPriceFeed = await contractAt("FastPriceFeed", addresses.fastPriceFeed);
 
-  await sendTxn(secondaryPriceFeed.initialize(1, signers, updaters), "secondaryPriceFeed.initialize")
+  await sendTxn(secondaryPriceFeed.initialize(3, signers, updaters), "secondaryPriceFeed.initialize")
   await sendTxn(secondaryPriceFeed.setMaxTimeDeviation(60 * 60), "secondaryPriceFeed.setMaxTimeDeviation")
   await sendTxn(
     secondaryPriceFeed.setUpdater(positionManager.address, true),

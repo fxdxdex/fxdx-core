@@ -29,6 +29,9 @@ describe("FastPriceFeed", function () {
   let vaultPriceFeed
   let fastPriceEvents
   let fastPriceFeed
+  let positionRouter
+  let swapRouter
+  let liquidityRouter
 
   beforeEach(async () => {
     vaultPriceFeed = await deployContract("VaultPriceFeed", [])
@@ -57,8 +60,8 @@ describe("FastPriceFeed", function () {
     positionRouter = await deployContract("PositionRouter", [vault.address, router.address, bnb.address, depositFee, minExecutionFee])
 
     const rewardRouter = await deployContract("RewardRouterV2", [])
-    const swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
-    const liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
+    swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
+    liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
 
     fastPriceEvents = await deployContract("FastPriceEvents", [])
     fastPriceFeed = await deployContract("FastPriceFeed", [
@@ -116,6 +119,39 @@ describe("FastPriceFeed", function () {
     expect(await fastPriceFeed.tokenManager()).eq(tokenManager.address)
     await fastPriceFeed.connect(user0).setTokenManager(user1.address)
     expect(await fastPriceFeed.tokenManager()).eq(user1.address)
+  })
+
+  it("setPositionRouter", async () => {
+    await expect(fastPriceFeed.connect(user0).setPositionRouter(user1.address))
+      .to.be.revertedWith("Governable: forbidden")
+
+    await fastPriceFeed.setGov(user0.address)
+
+    expect(await fastPriceFeed.positionRouter()).eq(positionRouter.address)
+    await fastPriceFeed.connect(user0).setPositionRouter(user1.address)
+    expect(await fastPriceFeed.positionRouter()).eq(user1.address)
+  })
+
+  it("setSwapRouter", async () => {
+    await expect(fastPriceFeed.connect(user0).setSwapRouter(user1.address))
+      .to.be.revertedWith("Governable: forbidden")
+
+    await fastPriceFeed.setGov(user0.address)
+
+    expect(await fastPriceFeed.swapRouter()).eq(swapRouter.address)
+    await fastPriceFeed.connect(user0).setSwapRouter(user1.address)
+    expect(await fastPriceFeed.swapRouter()).eq(user1.address)
+  })
+
+  it("setLiquidityRouter", async () => {
+    await expect(fastPriceFeed.connect(user0).setLiquidityRouter(user1.address))
+      .to.be.revertedWith("Governable: forbidden")
+
+    await fastPriceFeed.setGov(user0.address)
+
+    expect(await fastPriceFeed.liquidityRouter()).eq(liquidityRouter.address)
+    await fastPriceFeed.connect(user0).setLiquidityRouter(user1.address)
+    expect(await fastPriceFeed.liquidityRouter()).eq(user1.address)
   })
 
   it("setSigner", async () => {

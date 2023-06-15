@@ -48,14 +48,47 @@ function getOptimismGoerliValues() {
 
   // replace the TOKEN_FEES values with the ones got by running withdrawFees script
   const TOKEN_FEES = {
-    "btc": "0.024623647534469503",
-    "eth": "0.019363144301920062",
-    "usdc": "749.015592290254480132",
-    "usdt": "359.604975124378109419"
+    "btc": "27.848793273887503241",
+    "eth": "197.196324830425726880",
+    "feth": "585.302023499145409805",
+    "usdc": "1055128.480964292859385680",
+    "usdt": "43931.532810729276959612"
   }
 
   // replace WITHDRAW_TIMESTAMP value with the one printed by running withdrawFees script (-> Timestamp: )
-  const WITHDRAW_TIMESTAMP = 1677126750
+  const WITHDRAW_TIMESTAMP = 1686637388
+
+  // platform index tokens
+  const { btc, eth, feth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, feth, usdc, usdt]
+
+  return {
+    maintenanceBps: MAINTENENCE_BPS,
+    directPoolBps: DIRECT_POOL_BPS,
+    tokenFeesMap: TOKEN_FEES,
+    timestamp: WITHDRAW_TIMESTAMP,
+    tokenArr
+  }
+}
+
+
+function getOptimismValues() {
+  // update the following 3 BPS values according to your need.
+  // sum of the following 3 values should be equal to BASIS_POINTS_DIVISIOR
+  const MAINTENENCE_BPS = 0 // 1%
+  const DIRECT_POOL_BPS = 0 // 29%
+  const REWARDS_BPS = 10000 // 70%
+
+  // replace the TOKEN_FEES values with the ones got by running withdrawFees script
+  const TOKEN_FEES = {
+    "btc": "0.00116263",
+    "eth": "0.051032296583732714",
+    "usdc": "107.095633",
+    "usdt": "35.034876"
+  }
+
+  // replace WITHDRAW_TIMESTAMP value with the one printed by running withdrawFees script (-> Timestamp: )
+  const WITHDRAW_TIMESTAMP = 1686566391
 
   // platform index tokens
   const { btc, eth, usdc, usdt } = tokens
@@ -75,6 +108,8 @@ function getValues() {
     return getGoerliValues()
   } else if (network === "optimismGoerli") {
     return getOptimismGoerliValues()
+  } else if (network === "optimism") {
+    return getOptimismValues()
   }
 }
 

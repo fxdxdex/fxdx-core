@@ -131,5 +131,110 @@ module.exports = {
       address: "0x5088964b5174E7DEe70a5343066f6a6Ac5ca71Fc",
       decimals: 18
     }
+  },
+  optimism: {
+    btc: {
+      name: "btc",
+      address: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
+      decimals: 8,
+      priceFeed: "0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F",
+      priceDecimals: 8,
+      fastPricePrecision: 1000,
+      maxCumulativeDeltaDiff: 80 * 1000 * 1000,
+      isStrictStable: false,
+      tokenWeight: 20000,
+      minProfitBps: 0,
+      maxUsdfAmount: 50 * 1000 * 1000,
+      bufferAmount: 450,
+      isStable: false,
+      isShortable: true,
+      // maxGlobalShortSize: 30 * 1000 * 1000,
+      maxGlobalShortSize: 5000,
+      maxGlobalLongSize: 5000,
+      taxBasisPoints: 0, // 0%
+      mintBurnFeeBasisPoints: 30, // 0.3%
+      swapFeeBasisPoints: 25, // 0.25%
+      rolloverRateFactor: 0,
+      relativePnlList: [0, 1000, 5000],
+      positionFeeBpsList: [0, 0, 0],
+      profitFeeBpsList: [500, 500, 1000],
+      faucetAmount: 0.004,
+    },
+    eth: {
+      name: "eth",
+      address: "0xD158B0F013230659098e58b66b602dFF8f7ff120",
+      decimals: 18,
+      priceFeed: "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
+      priceDecimals: 8,
+      fastPricePrecision: 1000,
+      maxCumulativeDeltaDiff: 10 * 1000 * 1000,
+      isStrictStable: false,
+      tokenWeight: 30000,
+      minProfitBps: 0,
+      maxUsdfAmount: 120 * 1000 * 1000,
+      bufferAmount: 15000,
+      isStable: false,
+      isShortable: true,
+      // maxGlobalShortSize: 30 * 1000 * 1000,
+      maxGlobalShortSize: 5000,
+      maxGlobalLongSize: 5000,
+      taxBasisPoints: 0, // 0%
+      mintBurnFeeBasisPoints: 30, // 0.3%
+      swapFeeBasisPoints: 25, // 0.25%
+      rolloverRateFactor: 0,
+      relativePnlList: [0, 1000, 5000],
+      positionFeeBpsList: [0, 0, 0],
+      profitFeeBpsList: [500, 500, 1000],
+      faucetAmount: 0.05,
+    },
+    usdc: {
+      name: "usdc",
+      address: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+      decimals: 6,
+      priceFeed: "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3",
+      priceDecimals: 8,
+      isStrictStable: true,
+      tokenWeight: 30000,
+      minProfitBps: 0,
+      maxUsdfAmount: 120 * 1000 * 1000,
+      bufferAmount: 60 * 1000 * 1000,
+      isStable: true,
+      isShortable: false,
+      taxBasisPoints: 0, // 0.00%
+      mintBurnFeeBasisPoints: 30, // 0.3%
+      swapFeeBasisPoints: 1, // 0.01%
+      rolloverRateFactor: 0,
+      relativePnlList: [],
+      positionFeeBpsList: [],
+      profitFeeBpsList: [],
+      faucetAmount: 100,
+    },
+    usdt: {
+      name: "usdt",
+      address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+      decimals: 6,
+      priceFeed: "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E",
+      priceDecimals: 8,
+      isStrictStable: true,
+      tokenWeight: 20000,
+      minProfitBps: 0,
+      maxUsdfAmount: 80 * 1000 * 1000,
+      bufferAmount: 4 * 1000 * 1000,
+      isStable: true,
+      isShortable: false,
+      taxBasisPoints: 0, // 0.0%
+      mintBurnFeeBasisPoints: 30, // 0.3%
+      swapFeeBasisPoints: 1, // 0.01%
+      rolloverRateFactor: 0,
+      relativePnlList: [],
+      positionFeeBpsList: [],
+      profitFeeBpsList: [],
+      faucetAmount: 100,
+    },
+    nativeToken: {
+      name: "weth",
+      address: "0xD158B0F013230659098e58b66b602dFF8f7ff120",
+      decimals: 18
+    }
   }
 }

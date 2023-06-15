@@ -9,6 +9,7 @@ import "./interfaces/ILiquidityRouter.sol";
 
 import "../staking/interfaces/IRewardRouter.sol";
 import "../peripherals/interfaces/ITimelock.sol";
+import "../referrals/interfaces/IReferralStorage.sol";
 import "./BaseRequestRouter.sol";
 
 contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
@@ -40,6 +41,7 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
     }
 
     address public rewardRouter;
+    address public referralStorage;
 
     bytes32[] public addLiquidityRequestKeys;
     bytes32[] public removeLiquidityRequestKeys;
@@ -52,6 +54,8 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
 
     mapping (address => uint256) public removeLiquiditiesIndex;
     mapping (bytes32 => RemoveLiquidityRequest) public removeLiquidityRequests;
+
+    event SetReferralStorage(address referralStorage);
 
     event CreateAddLiquidity(
         address indexed account,
@@ -132,6 +136,12 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
         uint256 removeLiquidityRequestKeysStart
     );
 
+    event AddLiquidityReferral(
+        address account,
+        bytes32 referralCode,
+        address referrer
+    );
+
     constructor(
         address _vault,
         address _router,
@@ -140,6 +150,11 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
         uint256 _minExecutionFee
     ) public BaseRequestRouter(_vault, _router, _weth, _minExecutionFee) {
         rewardRouter = _rewardRouter;
+    }
+
+    function setReferralStorage(address _referralStorage) external onlyAdmin {
+        referralStorage = _referralStorage;
+        emit SetReferralStorage(_referralStorage);
     }
 
     function setRequestKeysStartValues(
@@ -230,13 +245,15 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
         uint256 _minUsdf,
         uint256 _minFlp,
         uint256 _acceptablePrice,
-        uint256 _executionFee
+        uint256 _executionFee,
+        bytes32 _referralCode
     ) public payable {
         require(_executionFee >= minExecutionFee, "LiquidityRouter: invalid executionFee");
         require(msg.value == _executionFee, "LiquidityRouter: invalid msg.value");
         require(_amountIn > 0, "LiquidityRouter: invalid _amountIn");
 
         _transferInETH();
+        _setTraderReferralCode(_referralCode);
 
         IRouter(router).pluginTransfer(_token, msg.sender, address(this), _amountIn);
 
@@ -256,12 +273,14 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
         uint256 _minUsdf,
         uint256 _minFlp,
         uint256 _acceptablePrice,
-        uint256 _executionFee
+        uint256 _executionFee,
+        bytes32 _referralCode
     ) external payable {
         require(_executionFee >= minExecutionFee, "LiquidityRouter: invalid executionFee");
         require(msg.value >= _executionFee, "LiquidityRouter: invalid msg.value");
 
         _transferInETH();
+        _setTraderReferralCode(_referralCode);
 
         uint256 amountIn = msg.value.sub(_executionFee);
 
@@ -333,6 +352,7 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
 
         address timelock = IVault(vault).gov();
         ITimelock(timelock).activateFeeUtils(vault);
+
         IRewardRouter(rewardRouter).mintAndStakeFlpForAccount(
             address(this),
             request.account,
@@ -356,6 +376,8 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
             block.number.sub(request.blockNumber),
             block.timestamp.sub(request.blockTime)
         );
+
+        _emitAddLiquidityReferral(request.account);
 
         return true;
     }
@@ -553,6 +575,31 @@ contract LiquidityRouter is BaseRequestRouter, ILiquidityRouter {
             index,
             block.number,
             block.timestamp
+        );
+    }
+
+    function _setTraderReferralCode(bytes32 _referralCode) internal {
+        if (_referralCode != bytes32(0) && referralStorage != address(0)) {
+            IReferralStorage(referralStorage).setTraderReferralCode(msg.sender, _referralCode);
+        }
+    }
+
+    function _emitAddLiquidityReferral(address _account) internal {
+        address _referralStorage = referralStorage;
+        if (_referralStorage == address(0)) {
+            return;
+        }
+
+        (bytes32 referralCode, address referrer) = IReferralStorage(_referralStorage).getTraderReferralInfo(_account);
+
+        if (referralCode == bytes32(0)) {
+            return;
+        }
+
+        emit AddLiquidityReferral(
+            _account,
+            referralCode,
+            referrer
         );
     }
 }

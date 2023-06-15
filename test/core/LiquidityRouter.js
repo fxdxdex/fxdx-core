@@ -289,6 +289,9 @@ describe("LiquidityRouter", function () {
     swapRouter = await deployContract("SwapRouter", [vault.address, router.address, bnb.address, minExecutionFee])
     liquidityRouter = await deployContract("LiquidityRouter", [vault.address, router.address, rewardRouter.address, bnb.address, minExecutionFee])
 
+    await liquidityRouter.setReferralStorage(referralStorage.address)
+    await referralStorage.setHandler(liquidityRouter.address, true)
+
     await feeUtils.setGov(timelock.address)
     await timelock.setContractHandler(liquidityRouter.address, true)
 
@@ -393,6 +396,17 @@ describe("LiquidityRouter", function () {
     expect(await liquidityRouter.maxTimeDelay()).eq(600)
   })
 
+  it("setReferralStorage", async () => {
+    await expect(liquidityRouter.connect(user0).setReferralStorage(user1.address))
+      .to.be.revertedWith("BaseRequestRouter: forbidden")
+
+    await liquidityRouter.setAdmin(user0.address)
+
+    expect(await liquidityRouter.referralStorage()).eq(referralStorage.address)
+    await liquidityRouter.connect(user0).setReferralStorage(user1.address)
+    expect(await liquidityRouter.referralStorage()).eq(user1.address)
+  })
+
   it("setRequestKeysStartValues", async () => {
     await expect(liquidityRouter.connect(user0).setRequestKeysStartValues(5, 8))
       .to.be.revertedWith("BaseRequestRouter: forbidden")
@@ -408,7 +422,7 @@ describe("LiquidityRouter", function () {
     expect(await liquidityRouter.removeLiquidityRequestKeysStart()).eq(8)
   })
 
-  it("addLiquidity acceptablePrice", async () => {
+  it("addLiquidity acceptablePrice, referralCode check", async () => {
     await liquidityRouter.setDelayValues(0, 300, 500)
 
     let params = [
@@ -418,6 +432,8 @@ describe("LiquidityRouter", function () {
       expandDecimals(290, 18), // _minFlp
       toUsd(310), // _acceptablePrice
     ]
+
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
 
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
@@ -430,7 +446,10 @@ describe("LiquidityRouter", function () {
     const executionFeeReceiver = newWallet()
     await liquidityRouter.setRequestKeeper(positionKeeper.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
+
+    expect(await referralStorage.traderReferralCodes(user0.address)).eq(referralCode)
+
     await expect(liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address))
       .to.be.revertedWith("LiquidityRouter: mark price lower than limit")
   })
@@ -446,6 +465,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -459,7 +480,7 @@ describe("LiquidityRouter", function () {
 
     await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await expect(liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address))
       .to.be.revertedWith("FlpManager: insufficient USDF output")
   })
@@ -475,6 +496,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -488,7 +511,7 @@ describe("LiquidityRouter", function () {
 
     await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await expect(liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address))
       .to.be.revertedWith("FlpManager: insufficient FLP output")
   })
@@ -504,6 +527,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -515,7 +540,7 @@ describe("LiquidityRouter", function () {
     await bnb.mint(user0.address, expandDecimals(1, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(1, 18))
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address)
 
     expect(await provider.getBalance(executionFeeReceiver.address)).eq(0)
@@ -552,7 +577,7 @@ describe("LiquidityRouter", function () {
     await bnb.mint(user0.address, expandDecimals(1, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(1, 18))
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     await increaseTime(provider, 510)
     await mineBlock(provider)
@@ -573,6 +598,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -586,7 +613,7 @@ describe("LiquidityRouter", function () {
 
     await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await liquidityRouter.connect(positionKeeper).cancelAddLiquidity(key, executionFeeReceiver.address)
 
     expect(await provider.getBalance(executionFeeReceiver.address)).eq(0)
@@ -622,7 +649,7 @@ describe("LiquidityRouter", function () {
     await bnb.mint(user0.address, expandDecimals(1, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(1, 18))
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     await increaseTime(provider, 1000)
     await mineBlock(provider)
@@ -650,6 +677,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -663,7 +692,7 @@ describe("LiquidityRouter", function () {
 
     await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address)
 
     let removeLiquidityParams = [
@@ -691,6 +720,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -704,7 +735,7 @@ describe("LiquidityRouter", function () {
 
     await rewardRouter.setLiquidityRouter(liquidityRouter.address, true)
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await liquidityRouter.connect(positionKeeper).executeAddLiquidity(key, executionFeeReceiver.address)
 
     let removeLiquidityParams = [
@@ -736,37 +767,39 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([3000])))
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([3000, referralCode])))
       .to.be.revertedWith("LiquidityRouter: invalid executionFee")
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000])))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode])))
       .to.be.revertedWith("LiquidityRouter: invalid msg.value")
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 3000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 3000 }))
       .to.be.revertedWith("LiquidityRouter: invalid msg.value")
 
     params[1] = 0
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("LiquidityRouter: invalid _amountIn")
 
     params[1] = expandDecimals(2, 18)
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("Router: invalid plugin")
 
     await router.addPlugin(liquidityRouter.address)
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("Router: plugin not approved")
 
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("ERC20: transfer amount exceeds balance")
 
     await bnb.mint(user0.address, expandDecimals(2, 18))
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("ERC20: transfer amount exceeds allowance")
 
     await bnb.connect(user0).approve(router.address, expandDecimals(2, 18))
@@ -797,7 +830,7 @@ describe("LiquidityRouter", function () {
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
     expect(await bnb.balanceOf(liquidityRouter.address)).eq(0)
 
-    const tx0 = await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    const tx0 = await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await reportGasUsed(provider, tx0, "createAddLiquidity gas used")
 
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
@@ -881,7 +914,7 @@ describe("LiquidityRouter", function () {
     await bnb.connect(user1).approve(router.address, expandDecimals(2, 18))
     await router.connect(user1).approvePlugin(liquidityRouter.address)
 
-    await liquidityRouter.connect(user1).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user1).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
     expect(await bnb.balanceOf(liquidityRouter.address)).eq(expandDecimals(2, 18).add(4000))
@@ -924,13 +957,15 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([3000])))
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
+    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([3000, referralCode])))
       .to.be.revertedWith("LiquidityRouter: invalid executionFee")
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000])), { value: 3000 })
+    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000, referralCode])), { value: 3000 })
       .to.be.revertedWith("LiquidityRouter: invalid msg.value")
 
-    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000]), { value: 4000 }))
+    await expect(liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000, referralCode]), { value: 4000 }))
       .to.be.revertedWith("LiquidityRouter: invalid amountIn")
 
     key = await liquidityRouter.getRequestKey(user0.address, 1)
@@ -958,7 +993,7 @@ describe("LiquidityRouter", function () {
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
     expect(await bnb.balanceOf(liquidityRouter.address)).eq(0)
 
-    const tx = await liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000]), { value: expandDecimals(1, 18).add(4000) })
+    const tx = await liquidityRouter.connect(user0).createAddLiquidityETH(...params.concat([4000, referralCode]), { value: expandDecimals(1, 18).add(4000) })
     await reportGasUsed(provider, tx, "createAddLiquidityETH gas used")
 
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
@@ -1039,7 +1074,7 @@ describe("LiquidityRouter", function () {
     expect(queueLengths[2]).eq(0) // removeLiquidityRequestKeysStart
     expect(queueLengths[3]).eq(0) // removeLiquidityRequestKeys.length
 
-    await liquidityRouter.connect(user1).createAddLiquidityETH(...params.concat([4000]), { value: expandDecimals(1, 18).add(4000) })
+    await liquidityRouter.connect(user1).createAddLiquidityETH(...params.concat([4000, referralCode]), { value: expandDecimals(1, 18).add(4000) })
 
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
     expect(await bnb.balanceOf(liquidityRouter.address)).eq(expandDecimals(1, 18).add(4000))
@@ -1085,6 +1120,8 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await router.addPlugin(liquidityRouter.address)
     await router.connect(user0).approvePlugin(liquidityRouter.address)
 
@@ -1116,7 +1153,7 @@ describe("LiquidityRouter", function () {
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
     expect(await bnb.balanceOf(liquidityRouter.address)).eq(0)
 
-    const tx0 = await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    const tx0 = await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
     await reportGasUsed(provider, tx0, "createAddLiquidity gas used")
 
     expect(await provider.getBalance(liquidityRouter.address)).eq(0)
@@ -1336,9 +1373,11 @@ describe("LiquidityRouter", function () {
       toUsd(290), // _acceptablePrice
     ]
 
+    const referralCode = "0x0000000000000000000000000000000000000000000000000000000000000123"
+
     await bnb.mint(user0.address, expandDecimals(2, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     let key0 = await liquidityRouter.getRequestKey(user0.address, 1)
     let request0 = await liquidityRouter.addLiquidityRequests(key0)
@@ -1352,7 +1391,7 @@ describe("LiquidityRouter", function () {
 
     await bnb.mint(user1.address, expandDecimals(2, 18))
     await bnb.connect(user1).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user1).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user1).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     let key1 = await liquidityRouter.getRequestKey(user1.address, 1)
     let request1 = await liquidityRouter.addLiquidityRequests(key1)
@@ -1366,7 +1405,7 @@ describe("LiquidityRouter", function () {
 
     await bnb.mint(user2.address, expandDecimals(2, 18))
     await bnb.connect(user2).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user2).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user2).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     let key2 = await liquidityRouter.getRequestKey(user2.address, 1)
     let request2 = await liquidityRouter.addLiquidityRequests(key2)
@@ -1383,7 +1422,7 @@ describe("LiquidityRouter", function () {
     await router.connect(user3).approvePlugin(liquidityRouter.address)
     await bnb.mint(user3.address, expandDecimals(2, 18))
     await bnb.connect(user3).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user3).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user3).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     let key3 = await liquidityRouter.getRequestKey(user3.address, 1)
     let request3 = await liquidityRouter.addLiquidityRequests(key3)
@@ -1400,7 +1439,7 @@ describe("LiquidityRouter", function () {
     await router.connect(user4).approvePlugin(liquidityRouter.address)
     await bnb.mint(user4.address, expandDecimals(2, 18))
     await bnb.connect(user4).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user4).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user4).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     let key4 = await liquidityRouter.getRequestKey(user4.address, 1)
     let request4 = await liquidityRouter.addLiquidityRequests(key4)
@@ -1516,11 +1555,11 @@ describe("LiquidityRouter", function () {
 
     await bnb.mint(user0.address, expandDecimals(2, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     await bnb.mint(user0.address, expandDecimals(2, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(2, 18))
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     queueLengths = await liquidityRouter.getRequestQueueLengths()
     expect(queueLengths[0]).eq(5) // addLiquidityRequestKeysStart
@@ -1732,9 +1771,9 @@ describe("LiquidityRouter", function () {
     await bnb.mint(user0.address, expandDecimals(6, 18))
     await bnb.connect(user0).approve(router.address, expandDecimals(6, 18))
 
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
-    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
+    await liquidityRouter.connect(user0).createAddLiquidity(...params.concat([4000, referralCode]), { value: 4000 })
 
     await liquidityRouter.connect(user0).createRemoveLiquidity(...removeLiquidityParams.concat([user0.address, toUsd(290), 4000, false]), { value: 4000 })
     await liquidityRouter.connect(user0).createRemoveLiquidity(...removeLiquidityParams.concat([user0.address, toUsd(290), 4000, false]), { value: 4000 })

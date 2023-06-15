@@ -10,7 +10,8 @@ async function deploy() {
   const weth = await contractAt("WETH", tokens.nativeToken.address)
   // const minExecutionFee = "10000000000000000" // 0.01 ETH for L1
   // const minExecutionFee = "100000000000000" // 0.0001 for Arbitrum
-  const minExecutionFee = "2000000000000000" // 0.002 ETH for Optimism
+  // const minExecutionFee = "2000000000000000" // 0.002 ETH for Optimism Goerli
+  const minExecutionFee = "500000000000000" // 0.0005 ETH for Optimism
 
   const swapRouter = await deployContract("SwapRouter", [vault.address, router.address, weth.address, minExecutionFee], "SwapRouter")
   // const swapRouter = await contractAt("SwapRouter", addresses.swapRouter)

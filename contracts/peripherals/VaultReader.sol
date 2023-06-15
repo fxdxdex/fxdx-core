@@ -139,18 +139,18 @@ contract VaultReader {
         for (uint256 i = 0; i < _tokens.length; i++) {
             address token = _tokens[i];
 
-            intValues[intValuesLength * i + 13] = vault.tokenDecimals(token);
-            intValues[intValuesLength * i + 14] = vault.minProfitBasisPoints(token);
+            intValues[intValuesLength * i + 3] = vault.tokenDecimals(token);
+            intValues[intValuesLength * i + 4] = vault.minProfitBasisPoints(token);
 
-            intValues[intValuesLength * i + 15] = vault.tokenWeights(token);
-            intValues[intValuesLength * i + 16] = vault.usdfAmounts(token);
-            intValues[intValuesLength * i + 17] = vault.maxUsdfAmounts(token);
-            intValues[intValuesLength * i + 18] = vault.bufferAmounts(token);
+            intValues[intValuesLength * i + 5] = vault.tokenWeights(token);
+            intValues[intValuesLength * i + 6] = vault.usdfAmounts(token);
+            intValues[intValuesLength * i + 7] = vault.maxUsdfAmounts(token);
+            intValues[intValuesLength * i + 8] = vault.bufferAmounts(token);
 
-            intValues[intValuesLength * i + 19] = vault.maxGlobalShortSizes(token);
+            intValues[intValuesLength * i + 9] = vault.maxGlobalShortSizes(token);
 
-            boolValues[boolValuesLength * i + 3] = vault.stableTokens(token);
-            boolValues[boolValuesLength * i + 4] = vault.shortableTokens(token);
+            boolValues[boolValuesLength * i + 2] = vault.stableTokens(token);
+            boolValues[boolValuesLength * i + 3] = vault.shortableTokens(token);
         }
 
         return (

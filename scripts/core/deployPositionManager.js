@@ -51,6 +51,7 @@ async function main() {
   }
 
   // await sendTxn(positionManager.setFastPriceFeed(addresses.fastPriceFeed), "positionManager.setFastPriceFeed")
+  // await sendTxn(positionManager.setReferralStorage(addresses.referralStorage), "positionManager.setReferralStorage")
 }
 
 main()

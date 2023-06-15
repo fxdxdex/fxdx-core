@@ -8,6 +8,8 @@ const addresses = require('./addresses')[network];
 async function main() {
   const { btc, eth, feth, usdc, usdt } = tokens
   const tokenArr = [btc, eth, feth, usdc, usdt];
+  // const { btc, eth, usdc, usdt } = tokens
+  // const tokenArr = [btc, eth, usdc, usdt];
 
   const timelock = await contractAt("Timelock", addresses.timelock)
   const vaultUtils = await contractAt("VaultUtils", addresses.vaultUtils)

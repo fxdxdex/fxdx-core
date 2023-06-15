@@ -9,13 +9,8 @@ async function main() {
   const priceFeedTimelock = await contractAt("PriceFeedTimelock", priceFeedGov)
 
   await sendTxn(
-    priceFeedTimelock.setPriceDuration(addresses.fastPriceFeed, 2 * 60),
-    `priceFeedTimelock.setPriceDuration(fastPriceFeed, ${2 * 60})`
-  )
-
-  await sendTxn(
-    priceFeedTimelock.setMaxPriceUpdateDelay(addresses.fastPriceFeed, 13 * 60 * 60),
-    `priceFeedTimelock.setMaxPriceUpdateDelay(fastPriceFeed, ${13 * 60 * 60})`
+    priceFeedTimelock.setLiquidityRouter(addresses.fastPriceFeed, addresses.liquidityRouter),
+    `priceFeedTimelock.setLiquidityRouter(fastPriceFeed, liquidityRouter)`
   )
 }
 

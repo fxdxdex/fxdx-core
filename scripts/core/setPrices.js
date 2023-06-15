@@ -14,8 +14,8 @@ async function main() {
   console.log("vaultPriceFeed.isSecondaryPriceEnabled", await vaultPriceFeed.isSecondaryPriceEnabled())
 
   await sendTxn(secondaryPriceFeed.setPrices(
-    [tokens.btc.address, tokens.eth.address, tokens.feth.address, tokens.usdc.address, tokens.usdt.address],
-    [expandDecimals(28097, 30), expandDecimals(1805, 30), expandDecimals(1805, 30), expandDecimals(1, 30), expandDecimals(1, 30)],
+    [tokens.btc.address, tokens.eth.address, tokens.usdc.address, tokens.usdt.address],
+    [expandDecimals(25873, 30), expandDecimals(1739, 30), expandDecimals(1, 30), expandDecimals(1, 30)],
     Math.floor(Date.now() / 1000),
   ), "secondaryPriceFeed.setPrices")
 }

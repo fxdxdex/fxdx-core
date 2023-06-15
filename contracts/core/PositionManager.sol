@@ -235,7 +235,7 @@ contract PositionManager is BasePositionManager {
     }
 
     function executeSwapOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
-        IOrderBook(orderBook).executeSwapOrder(_account, _orderIndex, _feeReceiver);
+        _executeSwapOrder(_account, _orderIndex, _feeReceiver);
     }
 
     function submitPricesAndExecuteSwapOrder(
@@ -249,7 +249,7 @@ contract PositionManager is BasePositionManager {
             IFastPriceFeed(fastPriceFeed).setPricesWithBits(_priceBits, _timestamp);
         }
 
-        IOrderBook(orderBook).executeSwapOrder(_account, _orderIndex, _feeReceiver);
+        _executeSwapOrder(_account, _orderIndex, _feeReceiver);
     }
 
     function executeIncreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) external onlyOrderKeeper {
@@ -286,6 +286,15 @@ contract PositionManager is BasePositionManager {
         }
 
         _executeDecreaseOrder(_account, _orderIndex, _feeReceiver);
+    }
+
+    function _executeSwapOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) internal {
+        address _vault = vault;
+        address timelock = IVault(_vault).gov();
+
+        ITimelock(timelock).activateFeeUtils(_vault);
+        IOrderBook(orderBook).executeSwapOrder(_account, _orderIndex, _feeReceiver);
+        ITimelock(timelock).deactivateFeeUtils(_vault);
     }
 
     function _executeIncreaseOrder(address _account, uint256 _orderIndex, address payable _feeReceiver) internal {

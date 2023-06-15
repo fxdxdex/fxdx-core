@@ -146,8 +146,20 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
         }
     }
 
-    function setTokenManager(address _tokenManager) external onlyGov {
+    function setTokenManager(address _tokenManager) external override onlyGov {
         tokenManager = _tokenManager;
+    }
+
+    function setPositionRouter(address _positionRouter) external override onlyGov {
+        positionRouter = _positionRouter;
+    }
+
+    function setSwapRouter(address _swapRouter) external override onlyGov {
+        swapRouter = _swapRouter;
+    }
+
+    function setLiquidityRouter(address _liquidityRouter) external override onlyGov {
+        liquidityRouter = _liquidityRouter;
     }
 
     function setSigner(address _account, bool _isActive) external override onlyGov {

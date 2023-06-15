@@ -215,6 +215,42 @@ describe("PriceFeedTimelock", function () {
     expect(await fastPriceFeed.vaultPriceFeed()).eq(vaultPriceFeed.address)
   })
 
+  it("setTokenManager", async () => {
+    await expect(timelock.connect(user0).setTokenManager(fastPriceFeed.address, user1.address))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    expect(await fastPriceFeed.tokenManager()).eq(tokenManager.address)
+    await timelock.connect(wallet).setTokenManager(fastPriceFeed.address, user1.address)
+    expect(await fastPriceFeed.tokenManager()).eq(user1.address)
+  })
+
+  it("setPositionRouter", async () => {
+    await expect(timelock.connect(user0).setPositionRouter(fastPriceFeed.address, user1.address))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    expect(await fastPriceFeed.positionRouter()).eq(positionRouter.address)
+    await timelock.connect(wallet).setPositionRouter(fastPriceFeed.address, user1.address)
+    expect(await fastPriceFeed.positionRouter()).eq(user1.address)
+  })
+
+  it("setSwapRouter", async () => {
+    await expect(timelock.connect(user0).setSwapRouter(fastPriceFeed.address, user1.address))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    expect(await fastPriceFeed.swapRouter()).eq(swapRouter.address)
+    await timelock.connect(wallet).setSwapRouter(fastPriceFeed.address, user1.address)
+    expect(await fastPriceFeed.swapRouter()).eq(user1.address)
+  })
+
+  it("setLiquidityRouter", async () => {
+    await expect(timelock.connect(user0).setLiquidityRouter(fastPriceFeed.address, user1.address))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    expect(await fastPriceFeed.liquidityRouter()).eq(liquidityRouter.address)
+    await timelock.connect(wallet).setLiquidityRouter(fastPriceFeed.address, user1.address)
+    expect(await fastPriceFeed.liquidityRouter()).eq(user1.address)
+  })
+
   it("setPriceDuration", async () => {
     await expect(timelock.connect(user0).setPriceDuration(fastPriceFeed.address, 1000))
       .to.be.revertedWith("Timelock: forbidden")

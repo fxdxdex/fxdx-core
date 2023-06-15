@@ -278,7 +278,10 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
             return 0;
         }
 
-        uint256 rolloverRate = cumulativeRolloverRates[_collateralToken].sub(_entryRolloverRate);
+        uint256 rolloverRate = cumulativeRolloverRates[_collateralToken] < _entryRolloverRate
+            ? 0
+            : cumulativeRolloverRates[_collateralToken].sub(_entryRolloverRate);
+
         if (rolloverRate == 0) {
             return 0;
         }
@@ -508,7 +511,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
         }
 
         address[] memory addressValues = new address[](2);
-        uint256[] memory intValues = new uint256[](3 +  totalLength);
+        uint256[] memory intValues = new uint256[](3 + totalLength);
         bool[] memory boolValues = new bool[](2);
 
         addressValues[0] = gov;
@@ -521,7 +524,7 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
         boolValues[0] = hasDynamicFees;
         boolValues[1] = isActive;
 
-        uint256 index = 10;
+        uint256 index = 3;
         for (uint256 i = 0; i < _tokens.length; i++) {
             address token = _tokens[i];
 
@@ -532,9 +535,9 @@ contract FeeUtilsV2 is IFeeUtils, IFeeUtilsV2 {
             intValues[index + 4] = relativePnlLists[token].length;
             index += 5;
             for (uint256 j = 0; j < relativePnlLists[token].length; j++) {
-                intValues[index] = relativePnlLists[token][i];
-                intValues[index + 1] = positionFeeBasisPointsLists[token][i];
-                intValues[index + 2] = profitFeeBasisPointsLists[token][i];
+                intValues[index] = relativePnlLists[token][j];
+                intValues[index + 1] = positionFeeBasisPointsLists[token][j];
+                intValues[index + 2] = profitFeeBasisPointsLists[token][j];
                 index += 3;
             }
         }

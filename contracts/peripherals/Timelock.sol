@@ -12,6 +12,7 @@ import "../core/interfaces/IFeeUtilsV1.sol";
 import "../core/interfaces/IFeeUtilsV2.sol";
 import "../core/interfaces/IFlpManager.sol";
 import "../referrals/interfaces/IReferralStorage.sol";
+import "../referrals/interfaces/ILiquidityReferralStorage.sol";
 import "../tokens/interfaces/IYieldToken.sol";
 import "../tokens/interfaces/IBaseToken.sol";
 import "../tokens/interfaces/IMintable.sol";
@@ -335,6 +336,14 @@ contract Timelock is ITimelock {
 
     function govSetCodeOwner(address _referralStorage, bytes32 _code, address _newAccount) external onlyKeeperAndAbove {
         IReferralStorage(_referralStorage).govSetCodeOwner(_code, _newAccount);
+    }
+
+    function setLiquidityReferralTierTotalRebate(address _referralStorage, uint256 _tierId, uint256 _totalRebate) external onlyKeeperAndAbove {
+        ILiquidityReferralStorage(_referralStorage).setTierTotalRebate(_tierId, _totalRebate);
+    }
+
+    function setLiquidityReferrerTier(address _referralStorage, address _referrer, uint256 _tierId) external onlyKeeperAndAbove {
+        ILiquidityReferralStorage(_referralStorage).setReferrerTier(_referrer, _tierId);
     }
 
     function setVaultUtils(address _vault, IVaultUtils _vaultUtils) external onlyAdmin {

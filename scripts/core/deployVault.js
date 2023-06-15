@@ -8,8 +8,8 @@ const tokens = require('./tokens')[network];
 const addresses = require('./addresses')[network];
 
 async function main() {
-  const { nativeToken, btc, eth, feth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, feth, usdc, usdt];
+  const { nativeToken, btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt];
 
   const vault = await deployContract("Vault", [])
   // const vault = await contractAt("Vault", addresses.vault)
@@ -43,14 +43,14 @@ async function main() {
   await sendTxn(vault.setManager(flpManager.address, true), "vault.setManager")
 
   await sendTxn(vault.setMinProfitTime(
-    24 * 60 * 60, // _minProfitTime
+    3 * 60 * 60, // _minProfitTime
   ), "vault.setMinProfitTime")
 
   const feeUtilsV2 = await deployContract("FeeUtilsV2", [vault.address])
   // const feeUtilsV2 = await contractAt("FeeUtilsV2", addresses.feeUtilsV2)
 
   await sendTxn(feeUtilsV2.initialize(
-    toUsd(2), // liquidationFeeUsd
+    toUsd(5), // liquidationFeeUsd
     true // hasDynamicFees
   ), "feeUtilsV2.initialize")
 

@@ -21,8 +21,10 @@ async function main() {
 
   // const { link, uni } = tokens
   // const tokenArr = [link, uni]
-  const { btc, eth, feth, usdc, usdt } = tokens
-  const tokenArr = [btc, eth, feth, usdc, usdt]
+  // const { btc, eth, feth, usdc, usdt } = tokens
+  // const tokenArr = [btc, eth, feth, usdc, usdt]
+  const { btc, eth, usdc, usdt } = tokens
+  const tokenArr = [btc, eth, usdc, usdt]
 
   for (const token of tokenArr) {
     await sendTxn(vaultTimelock[vaultMethod](

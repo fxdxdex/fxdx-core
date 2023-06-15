@@ -573,6 +573,12 @@ describe("PositionManager", function () {
   })
 
   it("executeSwapOrder", async () => {
+    const timelock = await deployTimelock()
+
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(positionManager.address, true)
+
     await dai.mint(user0.address, expandDecimals(1000, 18))
     await dai.connect(user0).approve(router.address, expandDecimals(100, 18))
     await orderBook.connect(user0).createSwapOrder(
@@ -600,6 +606,12 @@ describe("PositionManager", function () {
   })
 
   it("submitPricesAndExecuteSwapOrder", async () => {
+    const timelock = await deployTimelock()
+
+    await vault.setGov(timelock.address)
+    await feeUtils.setGov(timelock.address)
+    await timelock.setContractHandler(positionManager.address, true)
+
     await dai.mint(user0.address, expandDecimals(1000, 18))
     await dai.connect(user0).approve(router.address, expandDecimals(100, 18))
     await orderBook.connect(user0).createSwapOrder(

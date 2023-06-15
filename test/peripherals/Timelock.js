@@ -5,6 +5,7 @@ const { expandDecimals, increaseTime, mineBlock } = require("../shared/utilities
 const { toChainlinkPrice } = require("../shared/chainlink")
 const { toUsd } = require("../shared/units")
 const { initVault } = require("../core/Vault/helpers")
+const { keccak256 } = require("ethers/lib/utils")
 
 use(solidity)
 
@@ -294,6 +295,87 @@ describe("Timelock", function () {
     expect(await timelock0.buffer()).eq(3 * 24 * 60 * 60)
     await timelock0.connect(user1).setBuffer(3 * 24 * 60 * 60 + 10)
     expect(await timelock0.buffer()).eq(3 * 24 * 60 * 60 + 10)
+  })
+
+  it ("setTier", async () => {
+    const referralStorage = await deployContract("ReferralStorage", [])
+    await referralStorage.setGov(timelock.address)
+
+    await expect(timelock.connect(user0).setTier(referralStorage.address, 0, 1000, 5000))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.setKeeper(user0.address, true)
+
+    let tier0 = await referralStorage.tiers(0)
+    expect(tier0.totalRebate).eq(0)
+    expect(tier0.discountShare).eq(0)
+
+    await timelock.connect(user0).setTier(referralStorage.address, 0, 1000, 5000)
+    tier0 = await referralStorage.tiers(0)
+    expect(tier0.totalRebate).eq(1000)
+    expect(tier0.discountShare).eq(5000)
+  })
+
+  it ("setReferrerTier", async () => {
+    const referralStorage = await deployContract("ReferralStorage", [])
+    await referralStorage.setGov(timelock.address)
+
+    await expect(timelock.connect(user0).setReferrerTier(referralStorage.address, user1.address, 1))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.setKeeper(user0.address, true)
+
+    expect(await referralStorage.referrerTiers(user1.address)).equal(0)
+    await timelock.connect(user0).setReferrerTier(referralStorage.address, user1.address, 1)
+    expect(await referralStorage.referrerTiers(user1.address)).equal(1)
+  })
+
+  it ("govSetCodeOwner", async () => {
+    const referralStorage = await deployContract("ReferralStorage", [])
+    await referralStorage.setGov(timelock.address)
+
+    const code = keccak256("0xFF")
+
+    await referralStorage.connect(user1).registerCode(code)
+    expect (await referralStorage.codeOwners(code)).to.be.equal(user1.address)
+
+    await expect(timelock.connect(user0).govSetCodeOwner(referralStorage.address, code, user2.address))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.setKeeper(user0.address, true)
+
+    await timelock.connect(user0).govSetCodeOwner(referralStorage.address, code, user2.address)
+
+    expect (await referralStorage.codeOwners(code)).to.be.equal(user2.address)
+  })
+
+  it ("setLiquidityReferralTierTotalRebate", async () => {
+    const liquidityReferralStorage = await deployContract("LiquidityReferralStorage", [])
+    await liquidityReferralStorage.setGov(timelock.address)
+
+    await expect(timelock.connect(user0).setLiquidityReferralTierTotalRebate(liquidityReferralStorage.address, 0, 1000))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.setKeeper(user0.address, true)
+
+    expect(await liquidityReferralStorage.tierTotalRebates(0)).eq(0)
+
+    await timelock.connect(user0).setLiquidityReferralTierTotalRebate(liquidityReferralStorage.address, 0, 1000)
+    expect(await liquidityReferralStorage.tierTotalRebates(0)).eq(1000)
+  })
+
+  it ("setLiquidityReferrerTier", async () => {
+    const liquidityReferralStorage = await deployContract("LiquidityReferralStorage", [])
+    await liquidityReferralStorage.setGov(timelock.address)
+
+    await expect(timelock.connect(user0).setReferrerTier(liquidityReferralStorage.address, user1.address, 1))
+      .to.be.revertedWith("Timelock: forbidden")
+
+    await timelock.setKeeper(user0.address, true)
+
+    expect(await liquidityReferralStorage.referrerTiers(user1.address)).equal(0)
+    await timelock.connect(user0).setLiquidityReferrerTier(liquidityReferralStorage.address, user1.address, 1)
+    expect(await liquidityReferralStorage.referrerTiers(user1.address)).equal(1)
   })
 
   it("setVaultUtils", async () => {

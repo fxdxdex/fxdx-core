@@ -6,6 +6,10 @@ interface IFastPriceFeed {
     function lastUpdatedAt() external view returns (uint256);
     function lastUpdatedBlock() external view returns (uint256);
     function setMinAuthorizations(uint256 _minAuthorizations) external;
+    function setTokenManager(address _tokenManager) external;
+    function setPositionRouter(address _positionRouter) external;
+    function setSwapRouter(address _swapRouter) external;
+    function setLiquidityRouter(address _liquidityRouter) external;
     function setSigner(address _account, bool _isActive) external;
     function setUpdater(address _account, bool _isActive) external;
     function setPriceDuration(uint256 _priceDuration) external;

@@ -21,11 +21,10 @@ async function main() {
   const deployedTimelock = await contractAt("PriceFeedTimelock", timelock.address)
 
   const signers = [
-    addresses.signer1, // coinflipcanada
-    addresses.signer2, // G
-    addresses.signer3, // kr
-    addresses.signer4, // quat
-    addresses.signer5 // xhiroz
+    // addresses.signer1,
+    // addresses.signer2,
+    // addresses.signer3,
+    // addresses.signer4,
   ]
 
   for (let i = 0; i < signers.length; i++) {
@@ -34,7 +33,7 @@ async function main() {
   }
 
   const keepers = [
-    addresses.positionsKeeper // X
+    // addresses.positionsKeeper // X
   ]
 
   for (let i = 0; i < keepers.length; i++) {

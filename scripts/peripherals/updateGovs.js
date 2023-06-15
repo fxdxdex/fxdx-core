@@ -20,6 +20,21 @@ async function main() {
     admin, // deployer
   ), `timelock.${method}(vault, admin)`)
 
+  await sendTxn(timelock[method](
+    addresses.feeUtilsV2, // vault
+    admin, // deployer
+  ), `timelock.${method}(feeUtilsV2, admin)`)
+
+  await sendTxn(timelock[method](
+    addresses.referralStorage, // vault
+    admin, // deployer
+  ), `timelock.${method}(referralStorage, admin)`)
+
+  await sendTxn(timelock[method](
+    addresses.liquidityReferralStorage, // vault
+    admin, // deployer
+  ), `timelock.${method}(liquiidtyReferralStorage, admin)`)
+
   await sendTxn(priceFeedTimelock[method](
     addresses.vaultPriceFeed, // _vaultPriceFeed
     admin, // deployer

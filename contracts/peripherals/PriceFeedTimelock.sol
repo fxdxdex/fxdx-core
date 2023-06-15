@@ -135,6 +135,22 @@ contract PriceFeedTimelock {
         IFastPriceFeed(_fastPriceFeed).setVaultPriceFeed(_vaultPriceFeed);
     }
 
+    function setTokenManager(address _fastPriceFeed, address _tokenManager) external onlyAdmin {
+        IFastPriceFeed(_fastPriceFeed).setTokenManager(_tokenManager);
+    }
+
+    function setPositionRouter(address _fastPriceFeed, address _positionRouter) external onlyAdmin {
+        IFastPriceFeed(_fastPriceFeed).setPositionRouter(_positionRouter);
+    }
+
+    function setSwapRouter(address _fastPriceFeed, address _swapRouter) external onlyAdmin {
+        IFastPriceFeed(_fastPriceFeed).setSwapRouter(_swapRouter);
+    }
+
+    function setLiquidityRouter(address _fastPriceFeed, address _liquidityRouter) external onlyAdmin {
+        IFastPriceFeed(_fastPriceFeed).setLiquidityRouter(_liquidityRouter);
+    }
+
     function setPriceDuration(address _fastPriceFeed, uint256 _priceDuration) external onlyHandlerAndAbove {
         IFastPriceFeed(_fastPriceFeed).setPriceDuration(_priceDuration);
     }

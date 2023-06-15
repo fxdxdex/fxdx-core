@@ -1,18 +1,17 @@
-const { deployContract, sendTxn } = require("../shared/helpers")
+const { deployContract, sendTxn, contractAt } = require("../shared/helpers")
 
 const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const addresses = require('../core/addresses')[network];
 
 async function main() {
-  const tokenManager = await deployContract("TokenManager", [4], "TokenManager")
+  const tokenManager = await deployContract("TokenManager", [3], "TokenManager")
+  // const tokenManager = await contractAt("TokenManager", addresses.tokenManager)
 
   const signers = [
-    addresses.signer1, // Dovey
-    addresses.signer2, // G
-    addresses.signer3, // Han Wen
-    addresses.signer4, // Krunal Amin
-    addresses.signer5, // xhiroz
-    addresses.signer6 // Bybit Security Team
+    addresses.signer1,
+    addresses.signer2,
+    addresses.signer3,
+    addresses.signer4,
   ]
 
   await sendTxn(tokenManager.initialize(signers), "tokenManager.initialize")

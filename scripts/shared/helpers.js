@@ -7,27 +7,32 @@ const network = (process.env.HARDHAT_NETWORK || 'mainnet');
 const ARBITRUM = 42161
 const AVALANCHE = 43114
 const GOERLI = 5
+const OPTIMISM = 10
 
 const {
-  ARBITRUM_URL,
-  AVAX_URL,
-  ARBITRUM_DEPLOY_KEY,
-  AVAX_DEPLOY_KEY,
-  GOERLI_URL,
-  GOERLI_DEPLOY_KEY
+  // ARBITRUM_URL,
+  // AVAX_URL,
+  // ARBITRUM_DEPLOY_KEY,
+  // AVAX_DEPLOY_KEY,
+  // GOERLI_URL,
+  // GOERLI_DEPLOY_KEY,
+  OPTIMISM_URL,
+  OPTIMISM_DEPLOY_KEY
 } = require("../../env.json");
 const { ethers } = require('hardhat');
 
 const providers = {
-  arbitrum: new ethers.providers.JsonRpcProvider(ARBITRUM_URL),
-  avax: new ethers.providers.JsonRpcProvider(AVAX_URL),
-  goerli: new ethers.providers.JsonRpcProvider(GOERLI_URL)
+  // arbitrum: new ethers.providers.JsonRpcProvider(ARBITRUM_URL),
+  // avax: new ethers.providers.JsonRpcProvider(AVAX_URL),
+  // goerli: new ethers.providers.JsonRpcProvider(GOERLI_URL)
+  optimism: new ethers.providers.JsonRpcProvider(OPTIMISM_URL)
 }
 
 const signers = {
-  arbitrum: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.arbitrum),
-  avax: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.avax),
-  goerli: new ethers.Wallet(GOERLI_DEPLOY_KEY).connect(providers.goerli)
+  // arbitrum: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.arbitrum),
+  // avax: new ethers.Wallet(ARBITRUM_DEPLOY_KEY).connect(providers.avax),
+  // goerli: new ethers.Wallet(GOERLI_DEPLOY_KEY).connect(providers.goerli),
+  optimism: new ethers.Wallet(OPTIMISM_DEPLOY_KEY).connect(providers.goerli)
 }
 
 const readCsv = async (file) => {
@@ -55,6 +60,10 @@ function getChainId(network) {
 
   if (network === "goerli") {
     return 5
+  }
+
+  if (network === "optimism") {
+    return 10
   }
 
   throw new Error("Unsupported network")
@@ -169,6 +178,7 @@ module.exports = {
   ARBITRUM,
   AVALANCHE,
   GOERLI,
+  OPTIMISM,
   providers,
   signers,
   readCsv,

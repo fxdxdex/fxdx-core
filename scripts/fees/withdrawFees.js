@@ -14,6 +14,14 @@ function getGoerliValues() {
 }
 
 function getOptimismGoerliValues() {
+  const { btc, eth, feth, usdc, usdt } = tokens
+
+  const tokenArr = [btc, eth, feth, usdc, usdt]
+
+  return { tokenArr }
+}
+
+function getOptimismValues() {
   const { btc, eth, usdc, usdt } = tokens
 
   const tokenArr = [btc, eth, usdc, usdt]
@@ -26,6 +34,8 @@ function getValues() {
     return getGoerliValues()
   } else if (network === "optimismGoerli") {
     return getOptimismGoerliValues()
+  } else if (network === "optimism") {
+    return getOptimismValues()
   }
 }
 

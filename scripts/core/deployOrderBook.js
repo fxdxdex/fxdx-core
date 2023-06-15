@@ -13,9 +13,9 @@ async function main() {
 
   // const minExecutionFee = "10000000000000000" // 0.01 for Goerli
   // const minExecutionFee = "100000000000000" // 0.0001 for Arbitrum
-  const minExecutionFee = "1000000000000000" // 0.001 ETH for Optimism
+  // const minExecutionFee = "1000000000000000" // 0.001 ETH for Optimism Goerli
+  const minExecutionFee = "500000000000000" // 0.0005 ETH for Optimism
 
-  // Arbitrum mainnet addresses
   await sendTxn(orderBook.initialize(
     addresses.router, // router
     addresses.vault, // vault

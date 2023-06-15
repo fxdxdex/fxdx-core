@@ -8,10 +8,13 @@ async function main() {
   const admin = addresses.admin
   // const buffer = 24 * 60 * 60
   const buffer = 0;
-  const maxTokenSupply = expandDecimals("13250000", 18)
+  const maxTokenSupply = expandDecimals("1000000000", 18) // 1B supply limit
 
   const vault = await contractAt("Vault", addresses.vault)
   const feeUtilsV2 = await contractAt("FeeUtilsV2", addresses.feeUtilsV2)
+  const referralStorage = await contractAt("ReferralStorage", addresses.referralStorage)
+  const liquidityReferralStorage = await contractAt("LiquidityReferralStorage", addresses.liquidityReferralStorage)
+
   const tokenManager = { address: addresses.tokenManager }
 
   const mintReceiver = tokenManager
@@ -26,6 +29,7 @@ async function main() {
   ], "Timelock")
 
   const deployedTimelock = await contractAt("Timelock", timelock.address)
+  // const deployedTimelock = await contractAt("Timelock", addresses.timelock)
 
   await sendTxn(deployedTimelock.setShouldToggleIsLeverageEnabled(true), "deployedTimelock.setShouldToggleIsLeverageEnabled(true)")
   await sendTxn(deployedTimelock.setContractHandler(addresses.positionRouter, true), "deployedTimelock.setContractHandler(positionRouter)")
@@ -37,6 +41,8 @@ async function main() {
   // set Vault gov to timelock
   await sendTxn(vault.setGov(deployedTimelock.address), "vault.setGov(deployedTimelock.address)")
   await sendTxn(feeUtilsV2.setGov(deployedTimelock.address), "feeUtilsV2.setGov(deployedTimelock.address)")
+  await sendTxn(referralStorage.setGov(deployedTimelock.address), "referralStorage.setGov(deployedTimelock.address)")
+  await sendTxn(liquidityReferralStorage.setGov(deployedTimelock.address), "liquidityReferralStorage.setGov(deployedTimelock.address)")
 
   // // update gov of vault
   // const vaultGov = await contractAt("Timelock", await vault.gov())
@@ -45,11 +51,10 @@ async function main() {
   // await sendTxn(deployedTimelock.signalSetGov(vault.address, vaultGov.address), "deployedTimelock.signalSetGov(vault)")
 
   const signers = [
-    addresses.signer1, // coinflipcanada
-    addresses.signer2, // G
-    addresses.signer3, // kr
-    addresses.signer4, // quat
-    addresses.signer5 // xhiroz
+    // addresses.signer1,
+    // addresses.signer2,
+    // addresses.signer3,
+    // addresses.signer4,
   ]
 
   for (let i = 0; i < signers.length; i++) {
@@ -58,7 +63,7 @@ async function main() {
   }
 
   const keepers = [
-    addresses.positionsKeeper // X
+    // addresses.positionsKeeper // X
   ]
 
   for (let i = 0; i < keepers.length; i++) {
