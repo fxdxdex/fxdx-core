@@ -350,6 +350,10 @@ contract FastPriceFeed is ISecondaryPriceFeed, IFastPriceFeed, Governable {
         uint256 fastPrice = prices[_token];
         if (fastPrice == 0) { return _refPrice; }
 
+        if (_refPrice == 0) {
+            return fastPrice;
+        }
+
         uint256 diffBasisPoints = _refPrice > fastPrice ? _refPrice.sub(fastPrice) : fastPrice.sub(_refPrice);
         diffBasisPoints = diffBasisPoints.mul(BASIS_POINTS_DIVISOR).div(_refPrice);
 

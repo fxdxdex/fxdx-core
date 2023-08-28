@@ -19,7 +19,7 @@ contract FlpManager is ReentrancyGuard, Governable, IFlpManager {
 
     uint256 public constant PRICE_PRECISION = 10 ** 30;
     uint256 public constant USDF_DECIMALS = 18;
-    uint256 public constant MAX_COOLDOWN_DURATION = 48 hours;
+    uint256 public constant MAX_COOLDOWN_DURATION = 30 days;
 
     IVault public vault;
     address public override usdf;

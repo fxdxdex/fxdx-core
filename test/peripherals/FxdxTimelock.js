@@ -911,8 +911,9 @@ describe("FxdxTimelock", function () {
     expect(await vaultPriceFeed.priceFeeds(btc.address)).eq(AddressZero)
     expect(await vaultPriceFeed.priceDecimals(btc.address)).eq(0)
     expect(await vaultPriceFeed.strictStableTokens(btc.address)).eq(false)
+    expect(await vaultPriceFeed.getPriceForReaders(btc.address, true, false)).eq(0)
     await expect(vaultPriceFeed.getPrice(btc.address, true, false, false))
-      .to.be.revertedWith("VaultPriceFeed: invalid price feed")
+      .to.be.revertedWith("VaultPriceFeed: invalid price")
 
     await timelock.connect(wallet).priceFeedSetTokenConfig(
       vaultPriceFeed.address,
@@ -926,6 +927,7 @@ describe("FxdxTimelock", function () {
     expect(await vaultPriceFeed.priceDecimals(btc.address)).eq(8)
     expect(await vaultPriceFeed.strictStableTokens(btc.address)).eq(true)
     expect(await vaultPriceFeed.getPrice(btc.address, true, false, false)).eq(toNormalizedPrice(70000))
+    expect(await vaultPriceFeed.getPriceForReaders(btc.address, true, false)).eq(toNormalizedPrice(70000))
   })
 
   it("addPlugin", async () => {

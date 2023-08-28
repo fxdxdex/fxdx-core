@@ -145,7 +145,19 @@ contract VaultPriceFeed is IVaultPriceFeed {
         strictStableTokens[_token] = _isStrictStable;
     }
 
+    function getPriceForReaders(address _token, bool _maximise, bool _includeAmmPrice) public override view returns (uint256) {
+        return _getPrice(_token, _maximise, _includeAmmPrice);
+    }
+
     function getPrice(address _token, bool _maximise, bool _includeAmmPrice, bool /* _useSwapPricing */) public override view returns (uint256) {
+        uint256 price = _getPrice(_token, _maximise, _includeAmmPrice);
+
+        require(price > 0, "VaultPriceFeed: invalid price");
+
+        return price;
+    }
+
+    function _getPrice(address _token, bool _maximise, bool _includeAmmPrice) private view returns (uint256) {
         uint256 price = useV2Pricing ? getPriceV2(_token, _maximise, _includeAmmPrice) : getPriceV1(_token, _maximise, _includeAmmPrice);
 
         uint256 adjustmentBps = adjustmentBasisPoints[_token];
@@ -167,10 +179,11 @@ contract VaultPriceFeed is IVaultPriceFeed {
         if (_includeAmmPrice && isAmmEnabled) {
             uint256 ammPrice = getAmmPrice(_token);
             if (ammPrice > 0) {
-                if (_maximise && ammPrice > price) {
+                if (price == 0) {
                     price = ammPrice;
-                }
-                if (!_maximise && ammPrice < price) {
+                } else if (_maximise && ammPrice > price) {
+                    price = ammPrice;
+                } else if (!_maximise && ammPrice < price) {
                     price = ammPrice;
                 }
             }
@@ -253,6 +266,10 @@ contract VaultPriceFeed is IVaultPriceFeed {
             return _primaryPrice;
         }
 
+        if (_primaryPrice == 0) {
+            return ammPrice;
+        }
+
         uint256 diff = ammPrice > _primaryPrice ? ammPrice.sub(_primaryPrice) : _primaryPrice.sub(ammPrice);
         if (diff.mul(BASIS_POINTS_DIVISOR) < _primaryPrice.mul(spreadThresholdBasisPoints)) {
             if (favorPrimaryPrice) {
@@ -274,7 +291,10 @@ contract VaultPriceFeed is IVaultPriceFeed {
 
     function getLatestPrimaryPrice(address _token) public override view returns (uint256) {
         address priceFeedAddress = priceFeeds[_token];
-        require(priceFeedAddress != address(0), "VaultPriceFeed: invalid price feed");
+
+        if (priceFeedAddress == address(0)) {
+            return 0;
+        }
 
         IPriceFeed priceFeed = IPriceFeed(priceFeedAddress);
 
@@ -286,7 +306,9 @@ contract VaultPriceFeed is IVaultPriceFeed {
 
     function getPrimaryPrice(address _token, bool _maximise) public override view returns (uint256) {
         address priceFeedAddress = priceFeeds[_token];
-        require(priceFeedAddress != address(0), "VaultPriceFeed: invalid price feed");
+        if (priceFeedAddress == address(0)) {
+            return 0;
+        }
 
         if (chainlinkFlags != address(0)) {
             bool isRaised = IChainlinkFlags(chainlinkFlags).getFlag(FLAG_ARBITRUM_SEQ_OFFLINE);

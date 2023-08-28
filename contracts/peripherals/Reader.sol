@@ -30,8 +30,9 @@ contract Reader is Governable {
     }
 
     function getMaxAmountIn(IVault _vault, address _tokenIn, address _tokenOut) public view returns (uint256) {
-        uint256 priceIn = _vault.getMinPrice(_tokenIn);
-        uint256 priceOut = _vault.getMaxPrice(_tokenOut);
+        IVaultPriceFeed priceFeed = IVaultPriceFeed(_vault.priceFeed());
+        uint256 priceIn = priceFeed.getPriceForReaders(_tokenOut, false, false);
+        uint256 priceOut = priceFeed.getPriceForReaders(_tokenOut, true, false);
 
         uint256 tokenInDecimals = _vault.tokenDecimals(_tokenIn);
         uint256 tokenOutDecimals = _vault.tokenDecimals(_tokenOut);
@@ -75,6 +76,8 @@ contract Reader is Governable {
         uint256 tokenInDecimals = _vault.tokenDecimals(_tokenIn);
         uint256 tokenOutDecimals = _vault.tokenDecimals(_tokenOut);
 
+        IVaultPriceFeed priceFeed = IVaultPriceFeed(_vault.priceFeed());
+
         uint256 feeBasisPoints;
         {
             uint256 usdfAmount = _amountIn.mul(priceIn).div(PRICE_PRECISION);
@@ -84,7 +87,7 @@ contract Reader is Governable {
             feeBasisPoints = feeUtils.getSwapFeeBasisPoints(_tokenIn, _tokenOut, usdfAmount);
         }
 
-        uint256 priceOut = _vault.getMaxPrice(_tokenOut);
+        uint256 priceOut = priceFeed.getPriceForReaders(_tokenOut, true, false);
         uint256 amountOut = _amountIn.mul(priceIn).div(priceOut);
         amountOut = amountOut.mul(10 ** tokenOutDecimals).div(10 ** tokenInDecimals);
 
@@ -216,8 +219,8 @@ contract Reader is Governable {
 
         for (uint256 i = 0; i < _tokens.length; i++) {
             address token = _tokens[i];
-            amounts[i * propsLength] = _priceFeed.getPrice(token, true, true, false);
-            amounts[i * propsLength + 1] = _priceFeed.getPrice(token, false, true, false);
+            amounts[i * propsLength] = _priceFeed.getPriceForReaders(token, true, true);
+            amounts[i * propsLength + 1] = _priceFeed.getPriceForReaders(token, false, true);
             amounts[i * propsLength + 2] = _priceFeed.getPrimaryPrice(token, true);
             amounts[i * propsLength + 3] = _priceFeed.getPrimaryPrice(token, false);
             amounts[i * propsLength + 4] = _priceFeed.isAdjustmentAdditive(token) ? 1 : 0;
@@ -227,7 +230,7 @@ contract Reader is Governable {
         return amounts;
     }
 
-    function getVaultTokenInfo(address _vault, address _weth, uint256 _usdfAmount, address[] memory _tokens) public view returns (uint256[] memory) {
+    function getVaultTokenInfo(address _vault, address _weth, uint256 /*_usdfAmount*/, address[] memory _tokens) public view returns (uint256[] memory) {
         uint256 propsLength = 10;
 
         IVault vault = IVault(_vault);
@@ -242,10 +245,10 @@ contract Reader is Governable {
             amounts[i * propsLength] = vault.poolAmounts(token);
             amounts[i * propsLength + 1] = vault.reservedAmounts(token);
             amounts[i * propsLength + 2] = vault.usdfAmounts(token);
-            amounts[i * propsLength + 3] = vault.getRedemptionAmount(token, _usdfAmount);
+            amounts[i * propsLength + 3] = 0;
             amounts[i * propsLength + 4] = vault.tokenWeights(token);
-            amounts[i * propsLength + 5] = vault.getMinPrice(token);
-            amounts[i * propsLength + 6] = vault.getMaxPrice(token);
+            amounts[i * propsLength + 5] = priceFeed.getPriceForReaders(token, false, false);
+            amounts[i * propsLength + 6] = priceFeed.getPriceForReaders(token, true, false);
             amounts[i * propsLength + 7] = vault.guaranteedUsd(token);
             amounts[i * propsLength + 8] = priceFeed.getPrimaryPrice(token, false);
             amounts[i * propsLength + 9] = priceFeed.getPrimaryPrice(token, true);
@@ -254,7 +257,7 @@ contract Reader is Governable {
         return amounts;
     }
 
-    function getFullVaultTokenInfo(address _vault, address _weth, uint256 _usdfAmount, address[] memory _tokens) public view returns (uint256[] memory) {
+    function getFullVaultTokenInfo(address _vault, address _weth, uint256 /*_usdfAmount*/, address[] memory _tokens) public view returns (uint256[] memory) {
         uint256 propsLength = 12;
 
         IVault vault = IVault(_vault);
@@ -269,12 +272,12 @@ contract Reader is Governable {
             amounts[i * propsLength] = vault.poolAmounts(token);
             amounts[i * propsLength + 1] = vault.reservedAmounts(token);
             amounts[i * propsLength + 2] = vault.usdfAmounts(token);
-            amounts[i * propsLength + 3] = vault.getRedemptionAmount(token, _usdfAmount);
+            amounts[i * propsLength + 3] = 0;
             amounts[i * propsLength + 4] = vault.tokenWeights(token);
             amounts[i * propsLength + 5] = vault.bufferAmounts(token);
             amounts[i * propsLength + 6] = vault.maxUsdfAmounts(token);
-            amounts[i * propsLength + 7] = vault.getMinPrice(token);
-            amounts[i * propsLength + 8] = vault.getMaxPrice(token);
+            amounts[i * propsLength + 7] = priceFeed.getPriceForReaders(token, false, false);
+            amounts[i * propsLength + 8] = priceFeed.getPriceForReaders(token, true, false);
             amounts[i * propsLength + 9] = vault.guaranteedUsd(token);
             amounts[i * propsLength + 10] = priceFeed.getPrimaryPrice(token, false);
             amounts[i * propsLength + 11] = priceFeed.getPrimaryPrice(token, true);
@@ -283,7 +286,7 @@ contract Reader is Governable {
         return amounts;
     }
 
-    function getVaultTokenInfoV2(address _vault, address _weth, uint256 _usdfAmount, address[] memory _tokens) public view returns (uint256[] memory) {
+    function getVaultTokenInfoV2(address _vault, address _weth, uint256 /*_usdfAmount*/, address[] memory _tokens) public view returns (uint256[] memory) {
         uint256 propsLength = 14;
 
         IVault vault = IVault(_vault);
@@ -300,14 +303,14 @@ contract Reader is Governable {
             amounts[i * propsLength] = vault.poolAmounts(token);
             amounts[i * propsLength + 1] = vault.reservedAmounts(token);
             amounts[i * propsLength + 2] = vault.usdfAmounts(token);
-            amounts[i * propsLength + 3] = vault.getRedemptionAmount(token, _usdfAmount);
+            amounts[i * propsLength + 3] = 0;
             amounts[i * propsLength + 4] = vault.tokenWeights(token);
             amounts[i * propsLength + 5] = vault.bufferAmounts(token);
             amounts[i * propsLength + 6] = vault.maxUsdfAmounts(token);
             amounts[i * propsLength + 7] = vault.globalShortSizes(token);
             amounts[i * propsLength + 8] = maxGlobalShortSize;
-            amounts[i * propsLength + 9] = vault.getMinPrice(token);
-            amounts[i * propsLength + 10] = vault.getMaxPrice(token);
+            amounts[i * propsLength + 9] = priceFeed.getPriceForReaders(token, false, false);
+            amounts[i * propsLength + 10] = priceFeed.getPriceForReaders(token, true, false);
             amounts[i * propsLength + 11] = vault.guaranteedUsd(token);
             amounts[i * propsLength + 12] = priceFeed.getPrimaryPrice(token, false);
             amounts[i * propsLength + 13] = priceFeed.getPrimaryPrice(token, true);
@@ -339,14 +342,16 @@ contract Reader is Governable {
             amounts[i * POSITION_PROPS_LENGTH + 6] = lastIncreasedTime;
             }
 
-            uint256 size = amounts[i * POSITION_PROPS_LENGTH];
-            uint256 averagePrice = amounts[i * POSITION_PROPS_LENGTH + 2];
-            uint256 lastIncreasedTime = amounts[i * POSITION_PROPS_LENGTH + 6];
-            if (averagePrice > 0) {
-                (bool hasProfit, uint256 delta) = IVault(_vault).getDelta(_indexTokens[i], size, averagePrice, _isLong[i], lastIncreasedTime);
-                amounts[i * POSITION_PROPS_LENGTH + 7] = hasProfit ? 1 : 0;
-                amounts[i * POSITION_PROPS_LENGTH + 8] = delta;
-            }
+            // uint256 size = amounts[i * POSITION_PROPS_LENGTH];
+            // uint256 averagePrice = amounts[i * POSITION_PROPS_LENGTH + 2];
+            // uint256 lastIncreasedTime = amounts[i * POSITION_PROPS_LENGTH + 6];
+            // if (averagePrice > 0) {
+            //     (bool hasProfit, uint256 delta) = IVault(_vault).getDelta(_indexTokens[i], size, averagePrice, _isLong[i], lastIncreasedTime);
+            //     amounts[i * POSITION_PROPS_LENGTH + 7] = hasProfit ? 1 : 0;
+            //     amounts[i * POSITION_PROPS_LENGTH + 8] = delta;
+            // }
+            amounts[i * POSITION_PROPS_LENGTH + 7] = 0;
+            amounts[i * POSITION_PROPS_LENGTH + 8] = 0;
         }
 
         return amounts;

@@ -2,10 +2,9 @@ const { expect, use } = require("chai")
 const { solidity } = require("ethereum-waffle")
 const { deployContract } = require("../shared/fixtures")
 const { expandDecimals, bigNumberify, getBlockTime, increaseTime,
-  mineBlock, reportGasUsed, newWallet, getPriceBitArray, getPriceBits } = require("../shared/utilities")
-const { toChainlinkPrice } = require("../shared/chainlink")
-const { toUsd, toNormalizedPrice } = require("../shared/units")
+  mineBlock, reportGasUsed, getPriceBitArray, getPriceBits } = require("../shared/utilities")
 const { initVault } = require("../core/Vault/helpers")
+const { ethers } = require("hardhat")
 
 use(solidity)
 
@@ -26,6 +25,7 @@ describe("FastPriceFeed", function () {
   let btcPriceFeed
   let eth
   let ethPriceFeed
+  let wld
   let vaultPriceFeed
   let fastPriceEvents
   let fastPriceFeed
@@ -44,6 +44,8 @@ describe("FastPriceFeed", function () {
 
     eth = await deployContract("Token", [])
     ethPriceFeed = await deployContract("PriceFeed", [])
+
+    wld = await deployContract("Token", [])
 
     vault = await deployContract("Vault", [])
     timelock = await deployContract("Timelock", [
@@ -86,6 +88,7 @@ describe("FastPriceFeed", function () {
     await vaultPriceFeed.setTokenConfig(bnb.address, bnbPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(btc.address, btcPriceFeed.address, 8, false)
     await vaultPriceFeed.setTokenConfig(eth.address, ethPriceFeed.address, 8, false)
+    await vaultPriceFeed.setTokenConfig(wld.address, ethers.constants.AddressZero, 8, false)
   })
 
   it("inits", async () => {
@@ -352,13 +355,18 @@ describe("FastPriceFeed", function () {
 
     await fastPriceFeed.setMaxTimeDeviation(200)
 
-    await fastPriceFeed.connect(updater0).setPrices([btc.address, eth.address, bnb.address], [expandDecimals(60000, 30), expandDecimals(5000, 30), expandDecimals(700, 30)], blockTime + 100)
+    await fastPriceFeed.connect(updater0).setPrices(
+      [btc.address, eth.address, bnb.address, wld.address],
+      [expandDecimals(60000, 30), expandDecimals(5000, 30), expandDecimals(700, 30), expandDecimals(2, 30)],
+      blockTime + 100
+    )
     const blockNumber0 = await provider.getBlockNumber()
     expect(await fastPriceFeed.lastUpdatedBlock()).eq(blockNumber0)
 
     expect(await fastPriceFeed.prices(btc.address)).eq(expandDecimals(60000, 30))
     expect(await fastPriceFeed.prices(eth.address)).eq(expandDecimals(5000, 30))
     expect(await fastPriceFeed.prices(bnb.address)).eq(expandDecimals(700, 30))
+    expect(await fastPriceFeed.prices(wld.address)).eq(expandDecimals(2, 30))
 
     expect(await fastPriceFeed.lastUpdatedAt()).eq(blockTime + 100)
 
@@ -497,6 +505,25 @@ describe("FastPriceFeed", function () {
 
     expect(await fastPriceFeed.getPrice(bnb.address, 800, true)).eq(800)
     expect(await fastPriceFeed.getPrice(bnb.address, 800, false)).eq(790)
+
+    await vaultPriceFeed.setSecondaryPriceFeed(fastPriceFeed.address)
+
+    expect(await fastPriceFeed.getPrice(wld.address, 0, true)).eq(0)
+    await expect(vaultPriceFeed.getPrice(wld.address, false, false, false))
+      .to.be.revertedWith("VaultPriceFeed: invalid price")
+    expect(await vaultPriceFeed.getPriceForReaders(wld.address, false, false)).eq(0)
+
+    await fastPriceFeed.connect(updater1).setPrices([wld.address], [200], blockTime)
+    expect(await fastPriceFeed.getPrice(wld.address, 0, true)).eq(200)
+    expect(await vaultPriceFeed.getPrice(wld.address, false, false, false)).eq(200)
+    expect(await vaultPriceFeed.getPriceForReaders(wld.address, false, false)).eq(200)
+
+    await increaseTime(provider, 120 * 60)
+    await mineBlock(provider)
+
+    await expect(vaultPriceFeed.getPrice(wld.address, false, false, false))
+      .to.be.revertedWith("VaultPriceFeed: invalid price")
+    expect(await vaultPriceFeed.getPriceForReaders(wld.address, false, false)).eq(0)
   })
 
   it("setTokens", async () => {
